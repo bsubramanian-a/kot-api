@@ -9,40 +9,46 @@ const coreDB = require("../core/db");
 
 
 
-module.exports.init = async (event) => {
+module.exports.init = async (req,res) => {
   const db = await coreDB.openDBConnection();
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
+ 
   try {
     switch (true) {
-      case event.path === '/app/list-boat-type' && event.httpMethod === "GET":
-        return await listBoatType(event.queryStringParameters);
-      case event.path === '/app/list-fish-type' && event.httpMethod === "GET":
-        return await listFishType(event.queryStringParameters);
-      case event.path === '/app/list-boat' && event.httpMethod === "GET":
-        return await listBoat(event.queryStringParameters);
-      case event.path === '/app/list-boat-by-type' && event.httpMethod === "GET":
-          return await listBoatByType(event.queryStringParameters);
-      case event.path === '/app/get-boat-details' && event.httpMethod === "GET":
-          return await getBoatDetails(event.queryStringParameters);          
-      case event.path === '/app/search-boat' && event.httpMethod === "GET":
-        return await searchBoat(event.queryStringParameters);
-      case event.path === '/app/book-boat' && event.httpMethod === "POST":
-        return await bookBoat(JSON.parse(event.body));
-      case event.path === '/app/book-boat' && event.httpMethod === "PUT":
-        return await updateBoatBooking(JSON.parse(event.body));
-      case event.path === '/app/list-my-booking' && event.httpMethod === "GET":
-        return await listMyBooking(event.queryStringParameters);
-      case event.path === '/app/add-post' && event.httpMethod === "POST":
-        return await addPost(JSON.parse(event.body));
-      case event.path === '/app/like-post' && event.httpMethod === "POST":
-          return await likePost(JSON.parse(event.body));
-      case event.path === '/app/list-my-post' && event.httpMethod === "GET":
-        return await listMyPost(event.queryStringParameters);
-      case event.path === '/app/update-post' && event.httpMethod === "PUT":
-        return await updatePost(JSON.parse(event.body));
-      case event.path === '/app/delete-post' && event.httpMethod === 'DELETE':
-        return await deletePost(event.queryStringParameters);
-      case event.path === '/app/add-report' && event.httpMethod === "POST":
-        return await addReport(JSON.parse(event.body));
+      case pathname === '/list-boat-type' && req.method === "GET":
+        return await listBoatType(req.query);
+      case pathname === '/list-fish-type' && req.method === "GET":
+        return await listFishType(req.query);
+      case pathname === '/list-boat' && req.method === "GET":
+        return await listBoat(req.query);
+      case pathname === '/list-boat-by-type' && req.method === "GET":
+          return await listBoatByType(req.query);
+      case pathname === '/get-boat-details' && req.method === "GET":
+          return await getBoatDetails(req.query);          
+      case pathname === '/search-boat' && req.method === "GET":
+        return await searchBoat(req.query);
+      case pathname === '/book-boat' && req.method === "POST":
+        return await bookBoat(req.body);
+      case pathname === '/book-boat' && req.method === "PUT":
+        return await updateBoatBooking(req.body);
+      case pathname === '/list-my-booking' && req.method === "GET":
+        return await listMyBooking(req.query);
+      case pathname === '/add-post' && req.method === "POST":
+        return await addPost(req.body);
+      case pathname === '/like-post' && req.method === "POST":
+          return await likePost(req.body);
+      case pathname === '/list-my-post' && req.method === "GET":
+        return await listMyPost(req.query);
+      case pathname === '/update-post' && req.method === "PUT":
+        return await updatePost(req.body);
+      case pathname === '/delete-post' && req.method === 'DELETE':
+        return await deletePost(req.query);
+      case pathname === '/add-report' && req.method === "POST":
+        return await addReport(req.body);
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -50,7 +56,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
       error: error,
-      event: event,
+      req: req,
       handler: "auth",
       messageCode: "S001",
     };

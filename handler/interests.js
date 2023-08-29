@@ -3,20 +3,25 @@ const { addInterest, updateInterest, getInterestDetail, listInterests } = requir
 const logger = require('../core/logger');
 const coreDB = require('../core/db');
 
-module.exports.init = async (event) => {
+module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
-  logger.data('db done 1', event.path);
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
+  logger.data("db done");
   try {
     console.log('interests handler');
     switch (true) {
-      case event.path === '/interests/add-interest' && event.httpMethod === 'POST':
-        return await addInterest(JSON.parse(event.body));
-      case event.path === '/interests/update-interest' && event.httpMethod === 'PUT':
-        return await updateInterest(JSON.parse(event.body));
-      case event.path === '/interests/get-interest-detail' && event.httpMethod === 'GET':
-        return await getInterestDetail(event.queryStringParameters);
-      case event.path === '/interests/all-interests' && event.httpMethod === 'GET':
-        return await listInterests(event.queryStringParameters);
+      case pathname === '/add-interest' && req.method === 'POST':
+        return await addInterest(req.body);
+      case pathname === '/update-interest' && req.method === 'PUT':
+        return await updateInterest(req.body);
+      case pathname === '/get-interest-detail' && req.method === 'GET':
+        return await getInterestDetail(req.query);
+      case pathname === '/all-interests' && req.method === 'GET':
+        return await listInterests(req.query);
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -24,7 +29,7 @@ module.exports.init = async (event) => {
     logger.data('Function failed', error);
     const responseDataObject = {
       error: error,
-      event: event,
+      event: req,
       handler: 'interests',
       messageCode: 'I001',
     };

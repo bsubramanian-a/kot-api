@@ -3,17 +3,22 @@ const cartController = require("../controller/cart"); // Make sure to import the
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 
-module.exports.init = async (event) => {
+module.exports.init = async (req, res) => {
   const db = await coreDB.openDBConnection();
-  logger.data("db done", event.path);
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
+  logger.data("db done");
   try {
     switch (true) {
-      case event.path === '/cart/addToCart' && event.httpMethod === "POST":
-        return await cartController.addToCart(JSON.parse(event.body));
-      case event.path === '/cart/updateCartItemQuantity' && event.httpMethod === "PUT":
-        return await cartController.updateCartItemQuantity(JSON.parse(event.body));
-      case event.path === '/cart/getCartByUser' && event.httpMethod === "GET":
-        const userId = event.queryStringParameters.userId;
+      case pathname === '/addToCart' && req.method === "POST":
+        return await cartController.addToCart(req.body);
+      case pathname === '/updateCartItemQuantity' && req.method === "PUT":
+        return await cartController.updateCartItemQuantity(req.body);
+      case pathname === '/getCartByUser' && req.method === "GET":
+        const userId = req.query.userId;
         return await cartController.getCartByUser(userId);
       default:
         return defaultFunction.handlerNotFound();
@@ -22,7 +27,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
       error: error,
-      event: event,
+      req: req,
       handler: "cart",
       messageCode: "S001",
     };

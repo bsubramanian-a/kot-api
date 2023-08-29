@@ -4,7 +4,7 @@ const responser = require("../core/responser")
 module.exports.init = async (event, context, callback) => {
     const responseDataObject = {
         callback: callback,
-        event: event,
+        event: req,
         handler: "hello",
         messageCode: "001",
       };

@@ -3,13 +3,18 @@ const { createRating } = require("../controller/productRating");
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 
-module.exports.init = async (event) => {
+module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
-  logger.data("db done", event);
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
+  logger.data("db done");
   try {
     switch (true) {
-      case event.path === '/productRating/create' && event.httpMethod === "POST":
-        return await createRating(JSON.parse(event.body));
+      case pathname === '/create' && req.method === "POST":
+        return await createRating(req.body);
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -17,7 +22,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
       error: error,
-      event: event,
+      event: req,
       handler: "rating",
       messageCode: "S001",
     };

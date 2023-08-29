@@ -3,20 +3,25 @@ const { addUser, getUserDetail, updatetUserDetail,updatetUser } = require("../co
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 
-module.exports.init = async (event) => {
+module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
   logger.data("db done");
   try {
     switch (true) {
-      case event.path === '/user' && event.httpMethod === "POST":
-        return await addUser(JSON.parse(event.body));
-      case event.path === '/user' && event.httpMethod === "GET":
-        console.log(event.queryStringParameters);
-        return await getUserDetail(event.queryStringParameters);
-      case event.path === '/user/update' && event.httpMethod === "PATCH":
-        return await updatetUser(JSON.parse(event.body));
-      case event.path === '/user/update-detail' && event.httpMethod === "PATCH":
-        return await updatetUserDetail(JSON.parse(event.body));
+      case pathname === '/' && req.method === "POST":
+        return await addUser(req.body);
+      case pathname === '/' && req.method === "GET":
+        console.log(req.query);
+        return await getUserDetail(req.query);
+      case pathname === '/update' && req.method === "PATCH":
+        return await updatetUser(req.body);
+      case pathname === '/update-detail' && req.method === "PATCH":
+        return await updatetUserDetail(req.body);
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -24,7 +29,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
         error: error,
-        event: event,
+        req: req,
         handler: "auth",
         messageCode: "S001",
       };

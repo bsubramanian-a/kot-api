@@ -3,18 +3,23 @@ const { createComment, createReply, likeComment } = require("../controller/comme
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 
-module.exports.init = async (event) => {
+module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
-  logger.data("db done", event);
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
+  logger.data("db done");
   
   try {
     switch (true) {
-      case event.path === '/comment' && event.httpMethod === "POST":
-        return await createComment(JSON.parse(event.body));
-      case event.path === '/comment/reply' && event.httpMethod === "POST":
-        return await createReply(JSON.parse(event.body));
-      case event.path === '/comment/like' && event.httpMethod === "POST":
-        return await likeComment(JSON.parse(event.body));
+      case pathname === '/' && req.method === "POST":
+        return await createComment(req.body);
+      case pathname === '/reply' && req.method === "POST":
+        return await createReply(req.body);
+      case pathname === '/like' && req.method === "POST":
+        return await likeComment(req.body);
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -22,7 +27,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
       error: error,
-      event: event,
+      req: req,
       handler: "comment",
       messageCode: "S001",
     };

@@ -3,23 +3,28 @@ const { createAddress, updateAddress, getAddressById, deleteAddress, getAddressL
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 
-module.exports.init = async (event) => {
+module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
-  logger.data("db done", event);
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
+  logger.data("db done");
 
   try {
     switch (true) {
-      case event.path === '/address' && event.httpMethod === "POST":
-        return await createAddress(JSON.parse(event.body));
-      case event.path === '/address' && event.httpMethod === "PUT":
-        return await updateAddress(JSON.parse(event.body));
-      case event.path === '/address/getaddressbyid' && event.httpMethod === "GET":
-        const addressId = event.queryStringParameters.addressId;
+      case pathname === '/' && req.method === "POST":
+        return await createAddress(req.body);
+      case pathname === '/' && req.method === "PUT":
+        return await updateAddress(req.body);
+      case pathname === '/getaddressbyid' && req.method === "GET":
+        const addressId = req.query.addressId;
         return await getAddressById(addressId);
-      case event.path === '/address/getbyuserid' && event.httpMethod === "GET":
-        return await getAddressListByUserId(event.queryStringParameters.user);
-      case event.path === '/address/delete' && event.httpMethod === "DELETE":
-        const deleteAddressId = event.queryStringParameters.addressId;
+      case pathname === '/getbyuserid' && req.method === "GET":
+        return await getAddressListByUserId(req.query.user);
+      case pathname === '/delete' && req.method === "DELETE":
+        const deleteAddressId = req.query.addressId;
         return await deleteAddress(deleteAddressId);
       default:
         return defaultFunction.handlerNotFound();
@@ -28,7 +33,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
       error: error,
-      event: event,
+      req: req,
       handler: "address",
       messageCode: "S001",
     };

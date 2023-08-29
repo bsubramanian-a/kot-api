@@ -5,17 +5,23 @@ const coreDB = require("../core/db");
 
 
 
-module.exports.init = async (event) => {
+module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
-  logger.data("db done",event);
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
+  logger.data("db done");
+
   try {
     switch (true) {
-      case event.path === '/communityTopicCategory' && event.httpMethod === "POST":
-        return await addCommunityTopicCategory(JSON.parse(event.body));
-      case event.path === '/communityTopicCategory' && event.httpMethod === "PUT":
-        return await updateCommunityTopicCategory(JSON.parse(event.body));
-      case event.path === '/communityTopicCategory/getAllCommunityTopicCategoriesAndItsTopics' && event.httpMethod === "GET":
-            return await getAllCommunityTopicCategoriesAndItsTopics(event.queryStringParameters);      
+      case pathname === '/' && req.method === "POST":
+        return await addCommunityTopicCategory(req.body);
+      case pathname === '/' && req.method === "PUT":
+        return await updateCommunityTopicCategory(req.body);
+      case pathname === '/getAllCommunityTopicCategoriesAndItsTopics' && req.method === "GET":
+            return await getAllCommunityTopicCategoriesAndItsTopics(req.query);      
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -23,7 +29,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
         error: error,
-        event: event,
+        req: req,
         handler: "auth",
         messageCode: "S001",
       };

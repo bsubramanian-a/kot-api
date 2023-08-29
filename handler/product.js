@@ -3,20 +3,25 @@ const { addProduct, updateProduct, getProductDetail, listProduct } = require("..
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 
-module.exports.init = async (event) => {
+module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
-  logger.data("db done 1",event.path);
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
+  logger.data("db done");
   try {
     console.log("product cat handler");
     switch (true) {
-      case event.path === '/product/add-product' && event.httpMethod === "POST":
-        return await addProduct(JSON.parse(event.body));
-      case event.path === '/product/update-product' && event.httpMethod === "PUT":
-        return await updateProduct(JSON.parse(event.body));
-      case event.path === '/product/get-product-detail' && event.httpMethod === "GET":
-        return await getProductDetail(event.queryStringParameters);
-      case event.path === '/product/all-products' && event.httpMethod === "GET":
-        return await listProduct(event.queryStringParameters);
+      case pathname === '/add-product' && req.method === "POST":
+        return await addProduct(req.body);
+      case pathname === '/update-product' && req.method === "PUT":
+        return await updateProduct(req.body);
+      case pathname === '/get-product-detail' && req.method === "GET":
+        return await getProductDetail(req.query);
+      case pathname === '/all-products' && req.method === "GET":
+        return await listProduct(req.query);
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -24,7 +29,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
         error: error,
-        event: event,
+        event: req,
         handler: "auth",
         messageCode: "S001",
       };

@@ -3,20 +3,25 @@ const { addSpecies, updateSpecies, getSpeciesDetail, listSpecies } = require('..
 const logger = require('../core/logger');
 const coreDB = require('../core/db');
 
-module.exports.init = async (event) => {
+module.exports.init = async (req,res) => {
   const db = await coreDB.openDBConnection();
-  logger.data('db done 1', event.path);
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
+  logger.data("db done");
   try {
     console.log('species handler');
     switch (true) {
-      case event.path === '/species/add-species' && event.httpMethod === 'POST':
-        return await addSpecies(JSON.parse(event.body));
-      case event.path === '/species/update-species' && event.httpMethod === 'PUT':
-        return await updateSpecies(JSON.parse(event.body));
-      case event.path === '/species/get-species-detail' && event.httpMethod === 'GET':
-        return await getSpeciesDetail(event.queryStringParameters);
-      case event.path === '/species/all-species' && event.httpMethod === 'GET':
-        return await listSpecies(event.queryStringParameters);
+      case pathname === '/add-species' && req.method === 'POST':
+        return await addSpecies(req.body);
+      case pathname === '/update-species' && req.method === 'PUT':
+        return await updateSpecies(req.body);
+      case pathname === '/get-species-detail' && req.method === 'GET':
+        return await getSpeciesDetail(req.query);
+      case pathname === '/all-species' && req.method === 'GET':
+        return await listSpecies(req.query);
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -24,7 +29,7 @@ module.exports.init = async (event) => {
     logger.data('Function failed', error);
     const responseDataObject = {
       error: error,
-      event: event,
+      req: req,
       handler: 'species',
       messageCode: 'S001',
     };

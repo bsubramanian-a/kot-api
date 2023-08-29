@@ -3,19 +3,24 @@ const { addDashboardConfig, getDashboardConfig, updateDashboardConfig } = requir
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 
-module.exports.init = async (event) => {
+module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
   logger.data("db done");
   try {
     switch (true) {
-      case event.path === '/dashboard/add-config' && event.httpMethod === "POST":
-        return await addDashboardConfig(JSON.parse(event.body));
-      case event.path === '/dashboard/get-config' && event.httpMethod === "GET":
-        return await getDashboardConfig(event.queryStringParameters);
-      case event.path === "/dashboard/update-config" && event.httpMethod === "PATCH":
-        return await updateDashboardConfig(JSON.parse(event.body));
-      // case event.path === '/auth/login':
-      //   return await login(event, cb);
+      case pathname === '/add-config' && req.method === "POST":
+        return await addDashboardConfig(req.body);
+      case pathname === '/get-config' && req.method === "GET":
+        return await getDashboardConfig(req.query);
+      case pathname === "/update-config" && req.method === "PATCH":
+        return await updateDashboardConfig(req.body);
+      // case pathname === '/auth/login':
+      //   return await login(req, cb);
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -23,7 +28,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
         error: error,
-        event: event,
+        req: req,
         handler: "auth",
         messageCode: "S001",
       };

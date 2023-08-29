@@ -3,23 +3,28 @@ const { addDeal, updateDeal, getDealDetail, listDeals, getProductsInCategoryWith
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 
-module.exports.init = async (event) => {
+module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
-  logger.data("db done 1", event.path);
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
+  logger.data("db done");
   try {
     console.log("deal handler");
     switch (true) {
-        case event.path === '/deal/add-deal' && event.httpMethod === "POST":
-            return await addDeal(JSON.parse(event.body));
-        case event.path === '/deal/update-deal' && event.httpMethod === "PUT":
-            return await updateDeal(JSON.parse(event.body));
-        case event.path === '/deal/get-deal-detail' && event.httpMethod === "GET":
-            return await getDealDetail(event.queryStringParameters);
-        case event.path === '/deal/all-deals' && event.httpMethod === "GET":
-            return await listDeals(event.queryStringParameters);
-        case event.path === '/deal/products-in-category-with-deals' && event.httpMethod === "GET":
-            return await getProductsInCategoryWithDeals(event.queryStringParameters);
-        case event.path === '/deal/daily-deals-products' && event.httpMethod === "GET":
+        case pathname === '/add-deal' && req.method === "POST":
+            return await addDeal(req.body);
+        case pathname === '/update-deal' && req.method === "PUT":
+            return await updateDeal(req.body);
+        case pathname === '/get-deal-detail' && req.method === "GET":
+            return await getDealDetail(req.query);
+        case pathname === '/all-deals' && req.method === "GET":
+            return await listDeals(req.query);
+        case pathname === '/products-in-category-with-deals' && req.method === "GET":
+            return await getProductsInCategoryWithDeals(req.query);
+        case pathname === '/daily-deals-products' && req.method === "GET":
             return await getDailyDealsProducts();
         default:
             return defaultFunction.handlerNotFound();
@@ -28,7 +33,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
       error: error,
-      event: event,
+      event: req,
       handler: "deal", // Change the handler name to 'deal'
       messageCode: "S001",
     };

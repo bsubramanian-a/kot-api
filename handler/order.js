@@ -3,19 +3,24 @@ const { createOrder, updateOrder, getOrderHistory, getOrderHistoryById } = requi
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 
-module.exports.init = async (event) => {
+module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
-  logger.data("db done", event);
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
+  logger.data("db done");
   try {
     switch (true) {
-      case event.path === '/order' && event.httpMethod === "POST":
-        return await createOrder(JSON.parse(event.body));
-      case event.path === '/order' && event.httpMethod === "PUT":
-        return await updateOrder(JSON.parse(event.body));
-      case event.path === '/order/history' && event.httpMethod === "GET":
-        return await getOrderHistory(event.queryStringParameters.userId);
-      case event.path === '/order/historyById' && event.httpMethod === "GET":
-        return await getOrderHistoryById(event.queryStringParameters.orderId);
+      case pathname === '/' && req.method === "POST":
+        return await createOrder(req.body);
+      case pathname === '/' && req.method === "PUT":
+        return await updateOrder(req.body);
+      case pathname === '/history' && req.method === "GET":
+        return await getOrderHistory(req.query.userId);
+      case pathname === '/historyById' && req.method === "GET":
+        return await getOrderHistoryById(req.query.orderId);
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -23,7 +28,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
       error: error,
-      event: event,
+      event: req,
       handler: "auth",
       messageCode: "S001",
     };

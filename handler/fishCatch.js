@@ -3,23 +3,28 @@ const { addFishCatch, updateFishCatch, getFishCatchDetail, listFishCatches, like
 const logger = require('../core/logger');
 const coreDB = require('../core/db');
 
-module.exports.init = async (event) => {
+module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
-  logger.data('db done 1', event.path);
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
+  logger.data("db done");
   try {
     switch (true) {
-      case event.path === '/fishCatch/add-fish-catch' && event.httpMethod === 'POST':
-        return await addFishCatch(JSON.parse(event.body));
-      case event.path === '/fishCatch/update-fish-catch' && event.httpMethod === 'PUT':
-        return await updateFishCatch(JSON.parse(event.body));
-      case event.path === '/fishCatch/get-fish-catch-detail' && event.httpMethod === 'GET':
-        return await getFishCatchDetail(event.queryStringParameters);
-      case event.path === '/fishCatch/all-fish-catches' && event.httpMethod === 'GET':
-        return await listFishCatches(event.queryStringParameters);
-      case event.path === '/fishCatch/like' && event.httpMethod === "PUT":
-        return await likeFishCatch(JSON.parse(event.body));
-      case event.path === '/fishCatch/delete' && event.httpMethod === "DELETE":
-        return await deleteFishCatch(event.queryStringParameters);
+      case pathname === '/add-fish-catch' && req.method === 'POST':
+        return await addFishCatch(req.body);
+      case pathname === '/update-fish-catch' && req.method === 'PUT':
+        return await updateFishCatch(req.body);
+      case pathname === '/get-fish-catch-detail' && req.method === 'GET':
+        return await getFishCatchDetail(req.query);
+      case pathname === '/all-fish-catches' && req.method === 'GET':
+        return await listFishCatches(req.query);
+      case pathname === '/like' && req.method === "PUT":
+        return await likeFishCatch(req.body);
+      case pathname === '/delete' && req.method === "DELETE":
+        return await deleteFishCatch(req.query);
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -27,7 +32,7 @@ module.exports.init = async (event) => {
     logger.data('Function failed', error);
     const responseDataObject = {
       error: error,
-      event: event,
+      event: req,
       handler: 'fishCatch',
       messageCode: 'S001',
     };

@@ -3,15 +3,20 @@ const { addDocument, getDocument } = require("../controller/document");
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 
-module.exports.init = async (event) => {
+module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
   logger.data("db done");
   try {
     switch (true) {
-      case event.path === '/document' && event.httpMethod === "POST":
-        return await addDocument(JSON.parse(event.body));
-      case event.path === '/document' && event.httpMethod === "GET":
-        return await getDocument(event.queryStringParameters);
+      case pathname === '/' && req.method === "POST":
+        return await addDocument(req.body);
+      case pathname === '/' && req.method === "GET":
+        return await getDocument(req.query);
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -19,7 +24,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
         error: error,
-        event: event,
+        event: req,
         handler: "auth",
         messageCode: "S001",
       };

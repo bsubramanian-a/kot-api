@@ -3,22 +3,27 @@ const { addCategory, updateCategory, getCategoryDetail, listCategory,getProducts
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 
-module.exports.init = async (event) => {
+module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
-  logger.data("db done 1",event.path);
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
+  logger.data("db done");
   try {
     console.log("product cat handler");
     switch (true) {
-      case event.path === '/productCategory/add-product-category' && event.httpMethod === "POST":
-        return await addCategory(JSON.parse(event.body));
-      case event.path === '/productCategory/update-product-category' && event.httpMethod === "PUT":
-        return await updateCategory(JSON.parse(event.body));
-      case event.path === '/productCategory/get-category-detail' && event.httpMethod === "GET":
-        return await getCategoryDetail(event.queryStringParameters);
-      case event.path === '/productCategory/all-product-categories' && event.httpMethod === "GET":
-        return await listCategory(event.queryStringParameters);
-      case event.path === '/productCategory/all-products-by-category' && event.httpMethod === "GET":
-        return await getProductsByCategory(event.queryStringParameters);
+      case pathname === '/add-product-category' && req.method === "POST":
+        return await addCategory(req.body);
+      case pathname === '/update-product-category' && req.method === "PUT":
+        return await updateCategory(req.body);
+      case pathname === '/get-category-detail' && req.method === "GET":
+        return await getCategoryDetail(req.query);
+      case pathname === '/all-product-categories' && req.method === "GET":
+        return await listCategory(req.query);
+      case pathname === '/all-products-by-category' && req.method === "GET":
+        return await getProductsByCategory(req.query);
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -26,7 +31,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
         error: error,
-        event: event,
+        event: req,
         handler: "auth",
         messageCode: "S001",
       };

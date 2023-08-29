@@ -14,13 +14,13 @@ module.exports.init = async (req,res) => {
       case req.url === '/email-login' && req.method === "POST":
         return await loginByEmail(req.body);
       case req.url === '/verify-phone-otp' && req.method === "POST":
-        return await verifyPhoneOTP(JSON.parse(req.body));
+        return await verifyPhoneOTP(req.body);
       case req.url === '/verify-email-otp' && req.method === "POST":
-        return await verifyEmailOTP(JSON.parse(req.body));
+        return await verifyEmailOTP(req.body);
       case req.url === '/resend-phone-otp' && req.method === "POST":
-        return await resendPhoneOTP(JSON.parse(req.body));
+        return await resendPhoneOTP(req.body);
       case req.url === '/resend-email-otp' && req.method === "POST":
-        return await resendEmailOTP(JSON.parse(req.body));
+        return await resendEmailOTP(req.body);
       default:
         return defaultFunction.handlerNotFound();
     }

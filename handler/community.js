@@ -2,30 +2,36 @@ const defaultFunction = require('../core/responser');
 const { addCommunity,updateCommunity,getAllCommunities,addCommunityPost,getCommunityFeed, followOrUnfollowCommunity, getAllRecommendedCommunities } = require("../controller/community");
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
+const url = require("url");
 
 
 
-module.exports.init = async (event) => {
+module.exports.init = async (req, res) => {
   const db = await coreDB.openDBConnection();
-  logger.data("db done",event);
+  logger.data("queryStringParameters",req.query);
+  console.log("req.url",req.url)
+  const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = parsedUrl.pathname;
+  console.log("pathname",pathname);
   try {
+    
     switch (true) {
-      case event.path === '/community' && event.httpMethod === "POST":
-        return await addCommunity(JSON.parse(event.body));
-      case event.path === '/community' && event.httpMethod === "PUT":
-        return await updateCommunity(JSON.parse(event.body));    
-      case event.path === '/community/getAllCommunities' && event.httpMethod === "GET":
-        return await getAllCommunities(event.queryStringParameters);
-      case event.path === '/community/getAllRecommendedCommunities' && event.httpMethod === "GET":
-          return await getAllRecommendedCommunities(event.queryStringParameters);
-      case event.path === '/community/addPost' && event.httpMethod === "POST":
-        return await addCommunityPost(JSON.parse(event.body));
-      case event.path === '/community/addFishCatch' && event.httpMethod === "POST":
-        return await addCommunityPost(JSON.parse(event.body));
-      case event.path === '/community/follow-or-unfollow' && event.httpMethod === "POST":
-        return await followOrUnfollowCommunity(JSON.parse(event.body));
-      case event.path === '/community/communityFeed' && event.httpMethod === "GET":
-        return await getCommunityFeed(event.queryStringParameters);          
+      case pathname === '/' && req.method === "POST":
+        return await addCommunity(req.body);
+      case pathname === '/' && req.method === "PUT":
+        return await updateCommunity(req.body);    
+      case pathname === '/getAllCommunities' && req.method === "GET":
+        return await getAllCommunities(req.query);
+      case pathname === '/getAllRecommendedCommunities' && req.method === "GET":
+          return await getAllRecommendedCommunities(req.query);
+      case pathname === '/addPost' && req.method === "POST":
+        return await addCommunityPost(req.body);
+      case pathname === '/addFishCatch' && req.method === "POST":
+        return await addCommunityPost(req.body);
+      case pathname === '/follow-or-unfollow' && req.method === "POST":
+        return await followOrUnfollowCommunity(req.body);
+      case pathname === '/communityFeed' && req.method === "GET":
+        return await getCommunityFeed(req.query);          
       default:
         return defaultFunction.handlerNotFound();
     }
@@ -33,7 +39,7 @@ module.exports.init = async (event) => {
     logger.data("Function failed", error);
     const responseDataObject = {
         error: error,
-        event: event,
+        req: req,
         handler: "auth",
         messageCode: "S001",
       };

@@ -1,5 +1,5 @@
 const defaultFunction = require('../core/responser');
-const { addCategory, updateCategory, getCategoryDetail, listCategory,getProductsByCategory } = require("../controller/productcategory");
+const { addCategory, updateCategory, getCategoryDetail, listCategory,getProductsByCategory } = require("../controller/productCategory");
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 

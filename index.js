@@ -24,6 +24,9 @@ const cart = require("./handler/cart")
 const boat = require("./handler/boat")
 const address = require("./handler/address")
 const tournament = require("./handler/tournament")
+const license = require("./handler/license")
+const regulation = require("./handler/regulation")
+const faq = require("./handler/faq")
 
 dotenv.config();
 
@@ -178,6 +181,24 @@ const tournamentMiddleware = async (req, res, next) => {
   next(response);
 };
 
+const licenseMiddleware = async (req, res, next) => {
+  const response = await license.init(req, res);
+  res.json(JSON.parse(response.body));
+  next(response);
+};
+
+const regulationMiddleware = async (req, res, next) => {
+  const response = await regulation.init(req, res);
+  res.json(JSON.parse(response.body));
+  next(response);
+};
+
+const faqMiddleware = async (req, res, next) => {
+  const response = await faq.init(req, res);
+  res.json(JSON.parse(response.body));
+  next(response);
+};
+
 app.use('/dev/auth', authMiddleware);
 app.use('/dev/community', communityMiddleware);
 app.use('/dev/admin', adminMiddleware);
@@ -200,7 +221,10 @@ app.use('/dev/communityTopic', communityTopicMiddleware);
 app.use('/dev/comment', commentMiddleware);
 app.use('/dev/cart', cartMiddleware);
 app.use('/dev/boat', boatMiddleware);
-app.use('/dev/tournament',tournamentMiddleware)
+app.use('/dev/tournament',tournamentMiddleware);
+app.use('/dev/license',licenseMiddleware);
+app.use('/dev/regulation',regulationMiddleware);
+app.use('/dev/faq',faqMiddleware);
 
 app.listen(4000, () => {
   console.log('Server is running on port 4000');

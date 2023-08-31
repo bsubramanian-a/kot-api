@@ -103,7 +103,8 @@ const removedays = (array) => {
 
 const getUserDetails = async (userId) => {
   try {
-    const user = await userModel.find({ user: userId });
+    const user = await userModel.find({ _id: userId });
+
     return user;
   } catch (error) {
     throw error;

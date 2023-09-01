@@ -323,6 +323,8 @@ action.searchBoat = async (query) => {
       }
     }
 
+    // console.log("query luxury", query.isLuxury, query.isLuxury === "true");
+
     const boatDetail = await boatService.listBoat(queryData);
 
     const boatsWithRatingsAndBookings = await Promise.all(boatDetail.map(async boat => {
@@ -336,12 +338,25 @@ action.searchBoat = async (query) => {
 
       const personsRatedCount = ratings.length;
 
-      return {
-        ...boat.toObject(),
-        averageRating,
-        bookingCount,
-        personsRatedCount
-      };
+      if(query.isLuxury == "true"){
+        if(boat.pricePerDay >= 1000){
+          return {
+            ...boat.toObject(),
+            averageRating,
+            bookingCount,
+            personsRatedCount
+          };
+        }
+      }else{
+        if(boat.pricePerDay < 1000){
+          return {
+            ...boat.toObject(),
+            averageRating,
+            bookingCount,
+            personsRatedCount
+          };
+        }
+      }
     }));
 
     return defaultFunction.success({

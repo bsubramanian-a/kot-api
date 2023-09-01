@@ -23,7 +23,9 @@ const bookingSchema = new Schema({
   modifiedBy: { type: String },
   comments: { type: String },
   departTime: { type: String },
-  rating: { type: Number, enum: [1, 2, 3, 4, 5] }
+  rating: { type: Number, enum: [1, 2, 3, 4, 5] },
+  bookingTime: { type: Date },
+  bookingEndTime: { type: Date }
 },
   {
     timestamps: true

@@ -11,6 +11,7 @@ const commentSchema = new Schema({
   likes: [
     { type: mongoose.Schema.Types.ObjectId, ref: "userdetail" }
   ],  
-}, { timestamps: true });
+  replies: [{ type: mongoose.Schema.Types.ObjectId, ref: "Comment" }]
+}, { strictPopulate:false, timestamps: true });
 
 module.exports = mongoose.models.Comment || mongoose.model("Comment", commentSchema);

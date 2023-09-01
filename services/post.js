@@ -113,77 +113,68 @@ action.addPost = async data => {
 // }
 
 const populateReplies = async (commentId) => {
-  let comments = await commentModel.find({reply: commentId}).populate("user");
-  // console.log("comments in reply", comments);
+  let comments = await commentModel.find({ reply: commentId }).populate("user");
+  //console.log("comments",comments);
 
   if (!comments) {
     return null;
   }
-  
-  // Recursively populate replies for this comment
-  comments = await Promise.all(
+
+  const populatedComments = await Promise.all(
     comments.map(async (reply) => {
-      // console.log("reply  id", reply?._id);
       const replies = await populateReplies(reply._id);
-      reply.replies = [...replies];
+      //console.log("reply",reply)
+      reply.replies = replies;
+
       return reply;
     })
   );
 
-  // console.log("populate comments", comments);
-  
-  return comments;
+  return populatedComments;
 };
 
 const listCommentsWithReplies = async (postId) => {
   let comments = await commentModel.find({ post: postId, depth: 0 }).populate("user");
-  // console.log("comments", comments);
-  
+
   const commentsWithReplies = await Promise.all(
     comments.map(async (comment) => {
-      const replies = await populateReplies(comment._id); // Assuming you fetch replies here
-      
-      comment.replies = [...replies];
-      await comment.save(); 
-      
-      // console.log("comment inside", comment);
+      const replies = await populateReplies(comment._id);
+      comment.replies = replies;
       return comment;
     })
   );
 
-  // console.log("comments with replies", commentsWithReplies);
-  
   return commentsWithReplies;
 };
 
 action.listPost = async (query) => {
   try {
     const posts = await postModel.find(query).populate("user");
-    
-    // console.log("before promise");
+    //console.log("test");
+
+    // return {
+    //   "success":"success"
+    // }
+
     const populatedPosts = await Promise.all(
       posts.map(async (post) => {
         const populatedPost = post.toObject();
-
-        console.log("populated posts_______", populatedPost);
-
         const commentsWithReplies = await listCommentsWithReplies(post._id);
-
-        console.log("commentsWithReplies+++++++++++++", commentsWithReplies);
-        
-        populatedPost.comments = commentsWithReplies;
-        
+        populatedPost.comments = commentsWithReplies.map(comment => comment._doc);
+        //populatedPost.comments = "rest";
         return populatedPost;
       })
     );
-    // console.log("after promise");
-    
+
     return populatedPosts;
   } catch (error) {
     logger.error('Error while listing post', error);
     throw error;
   }
 }
+
+
+
 
 
 

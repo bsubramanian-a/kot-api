@@ -45,7 +45,8 @@ action.listMyPost = async (query) => {
     }
     let queryPost = {
       status: 1,
-      user: query.user
+      user: query.user,
+      _id:query.post
     }
 
     const posts = await postService.listPost(queryPost);
@@ -53,7 +54,7 @@ action.listMyPost = async (query) => {
     return defaultFunction.success({
       response: posts,
       message: "Posts listed successfully",
-      total: posts.length
+      // total: posts.length
     });
 
   } catch (error) {

@@ -18,6 +18,39 @@ action.addBooking = async data => {
   }
 }
 
+action.getExistingBookings = async (boatId, fromDate, toDate, _id) => {
+  console.log("boatId.......", boatId);
+  try {
+    const existingBookings = await bookingModel.find({
+      _id: { $ne: _id },
+      boat: boatId,
+      from: { $lt: toDate }, // Check if the booking's start date is before the provided 'toDate'
+      to: { $gt: fromDate },   // Check if the booking's end date is after the provided 'fromDate'
+      status: 1 // Consider only active bookings
+    });
+
+    return existingBookings;
+  } catch (error) {
+    throw error;
+  }
+};
+
+action.getExistingBookingsForBoat = async (boatId, fromDate, toDate) => {
+  console.log("boatId.......", boatId);
+  try {
+    const existingBookings = await bookingModel.find({
+      boat: boatId,
+      from: { $lt: toDate }, // Check if the booking's start date is before the provided 'toDate'
+      to: { $gt: fromDate },   // Check if the booking's end date is after the provided 'fromDate'
+      status: 1 // Consider only active bookings
+    });
+
+    return existingBookings;
+  } catch (error) {
+    throw error;
+  }
+};
+
 action.updateBoatBooking = async (query, updateData) => {
   try {
     return await bookingModel.findOneAndUpdate(query, updateData);

@@ -26,6 +26,7 @@ const fishCatchSchema = new Schema({
   createdBy: { type: String },
   modifiedBy: { type: String },
   isCommunityFishCatch: { type: Boolean },
+  comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Comment" }]
 },
 {
   timestamps: true

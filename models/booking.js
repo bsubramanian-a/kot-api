@@ -25,7 +25,9 @@ const bookingSchema = new Schema({
   departTime: { type: String },
   rating: { type: Number, enum: [1, 2, 3, 4, 5] },
   bookingTime: { type: Date },
-  bookingEndTime: { type: Date }
+  bookingEndTime: { type: Date },
+  isMultiDay: { type: Boolean },
+  overnightHours: { type: String }
 },
   {
     timestamps: true

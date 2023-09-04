@@ -55,7 +55,7 @@ const populateReplies = async (commentId) => {
 };
 
 const listCommentsWithReplies = async (fishCatchId) => {
-  let comments = await commentModel.find({ fishCatch: fishCatchId, depth: 0 }).populate("user");
+  let comments = await commentModel.find({ fishCatch: fishCatchId, depth: 0 }).populate("user likes replies");
 
   const commentsWithReplies = await Promise.all(
     comments.map(async (comment) => {

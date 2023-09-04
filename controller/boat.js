@@ -207,38 +207,72 @@ action.listBoat = async (query) => {
 //   }
 // };
 
-const checkSlotAvailability = async (boat, fromDate, toDate, howLonginWater) => {
-  // console.log("checkSlotAvailability", boat);
-  // console.log("fromDate", fromDate);
-  // console.log("toDate", toDate);
-  // console.log("howLonginWater", howLonginWater);
+// const checkSlotAvailability = async (boat, fromDate, toDate, howLonginWater) => {
+//   // console.log("checkSlotAvailability", boat);
+//   // console.log("fromDate", fromDate);
+//   // console.log("toDate", toDate);
+//   // console.log("howLonginWater", howLonginWater);
 
-  const existingBookings = await bookingService.getExistingBookingsForBoat(boat, fromDate, toDate);
+//   const existingBookings = await bookingService.getExistingBookingsForBoat(boat, fromDate, toDate);
 
-  // console.log("existingBookings", existingBookings);
+//   // console.log("existingBookings", existingBookings);
 
-  const availableTimeSlots = calculateAvailableTimeSlots(existingBookings, howLonginWater, fromDate, toDate);
+//   const availableTimeSlots = calculateAvailableTimeSlots(existingBookings, howLonginWater, fromDate, toDate);
 
-  // console.log("availableTimeSlots", availableTimeSlots);
+//   // console.log("availableTimeSlots", availableTimeSlots);
 
-  const bookingDurationMs = calculateBookingDurationMilliseconds(howLonginWater);
-  const suitableTimeSlot = findSuitableTimeSlot(availableTimeSlots, bookingDurationMs);
+//   const bookingDurationMs = calculateBookingDurationMilliseconds(howLonginWater);
+//   const suitableTimeSlot = findSuitableTimeSlot(availableTimeSlots, bookingDurationMs);
 
-  if (suitableTimeSlot) {
-    const bookingEndTime = new Date(suitableTimeSlot);
-    bookingEndTime.setMilliseconds(bookingEndTime.getMilliseconds() + bookingDurationMs);
+//   if (suitableTimeSlot) {
+//     const bookingEndTime = new Date(suitableTimeSlot);
+//     bookingEndTime.setMilliseconds(bookingEndTime.getMilliseconds() + bookingDurationMs);
 
-    const lastAvailableTimeSlot = availableTimeSlots[availableTimeSlots.length - 1];
+//     const lastAvailableTimeSlot = availableTimeSlots[availableTimeSlots.length - 1];
 
-    if (bookingEndTime <= lastAvailableTimeSlot) {
-      return false;
+//     if (bookingEndTime <= lastAvailableTimeSlot) {
+//       return false;
+//     } else {
+//       return true;
+//     }
+//   } else {
+//     return true;
+//   }
+// }
+
+const checkSlotAvailability = (boat, fromDate, toDate, howLonginWater) => {
+  return new Promise(async (resolve, reject) => {
+    const existingBookings = await bookingService.getExistingBookingsForBoat(boat, fromDate, toDate);
+
+    // console.log("existingBookings", existingBookings);
+
+    const howLonginWaterConverted = parseHowLongInWater(howLonginWater);
+
+    const availableTimeSlots = calculateAvailableTimeSlots(existingBookings, howLonginWaterConverted, fromDate, toDate);
+
+    console.log("availableTimeSlots", availableTimeSlots);
+
+    const bookingDurationMs = calculateBookingDurationMilliseconds(howLonginWaterConverted);
+    const suitableTimeSlot = findSuitableTimeSlot(availableTimeSlots, bookingDurationMs);
+
+
+    // At the end, resolve or reject based on your conditions
+    if (suitableTimeSlot) {
+      const bookingEndTime = new Date(suitableTimeSlot);
+      bookingEndTime.setMilliseconds(bookingEndTime.getMilliseconds() + bookingDurationMs);
+
+      const lastAvailableTimeSlot = availableTimeSlots[availableTimeSlots.length - 1];
+
+      if (bookingEndTime <= lastAvailableTimeSlot) {
+        resolve(false);
+      } else {
+        resolve(true);
+      }
     } else {
-      return true;
+      resolve(true);
     }
-  } else {
-    return true;
-  }
-}
+  });
+};
 
 action.searchBoat = async (query) => {
   try {
@@ -273,10 +307,10 @@ action.searchBoat = async (query) => {
       // console.log("uniqueBoatIdsWithinDateRange", uniqueBoatIdsWithinDateRange);
 
       // Step 2: Get list of boats that don't satisfy howLonginWater slot
-      const boatsWithShortSlots = uniqueBoatIdsWithinDateRange
+      const boatsWithShortSlots = await Promise.all(uniqueBoatIdsWithinDateRange
         .filter((boatId) => {
           return checkSlotAvailability(boatId, fromDate, toDate, query.howLonginWater);
-        });
+        }));
 
       console.log("boatsWithShortSlots", boatsWithShortSlots);
 
@@ -317,6 +351,9 @@ action.searchBoat = async (query) => {
         } else if (paramName === "length" || paramName === "motorPower") {
           const maxRange = +query[paramName];
           queryData[paramName] = { $gte: 0, $lte: maxRange };
+        } else if (paramName === "capacity") {
+          const minCapacity = +query[paramName];
+          queryData[paramName] = { $gte: minCapacity };
         } else {
           queryData[paramName] = +query[paramName];
         }
@@ -417,6 +454,20 @@ action.bookBoat = async (data) => {
   }
 };
 
+function parseHowLongInWater(howLongParam) {
+  const rangeMatch = howLongParam.match(/^(\d+)\s*-\s*(\d+)$/); // Check for a range like "1-2"
+  
+  if (rangeMatch) {
+    // It's a range, return an array with the start and end values
+    return [parseInt(rangeMatch[1], 10), parseInt(rangeMatch[2], 10)];
+  } else {
+    // It's a single number, return it as a parsed integer
+    const parsedNumber = parseInt(howLongParam, 10);
+    return isNaN(parsedNumber) ? null : parsedNumber; // Return null for non-numeric values
+  }
+}
+
+
 // action.updateBoatBooking = async (data) => {
 //   logger.info("Updating boat booking", data);
 //   try {
@@ -437,7 +488,9 @@ action.bookBoat = async (data) => {
 
 // Function to calculate booking duration in milliseconds
 function calculateBookingDurationMilliseconds(bookingDuration) {
+  console.log("calculateBookingDurationMilliseconds", bookingDuration, !isNaN(bookingDuration), typeof bookingDuration);
   if (!isNaN(bookingDuration) && typeof bookingDuration === 'number') {
+    console.log("number")
     // Handle "multi_day" as a special case where the user specifies the number of days
     // For example, if the user enters 2, the duration will be 2 days (48 hours)
     return 24 * bookingDuration * 60 * 60 * 1000;
@@ -477,7 +530,7 @@ function isOverlap(slot1, slot2, bookingDurationMs) {
   // console.log("isOverlap.........");
   // console.log("slot1.........", slot1);
   // console.log("slot2.........", slot2);
-  // console.log("bookingDurationMs.........", bookingDurationMs);
+  // console.log("isOverlap bookingDurationMs.........", bookingDurationMs);
   
   // Convert the date-time strings to Date objects
   const slot1Start = new Date(slot1);
@@ -495,12 +548,12 @@ function isOverlap(slot1, slot2, bookingDurationMs) {
   // console.log("slot2End", slot2End);
 
   // Check if the end of slot1 is after the start of slot2, and the start of slot1 is before the end of slot2
-  const overlapCondition1 = slot1Start < slot2Start && slot1End > slot2Start;
+  const overlapCondition1 = slot1Start <= slot2Start && slot1End >= slot2Start;
   
   // Check if the end of slot2 is after the start of slot1, and the start of slot2 is before the end of slot1
-  const overlapCondition2 = slot2Start <= slot1Start && slot2End > slot1Start;
+  const overlapCondition2 = slot2Start <= slot1Start && slot2End >= slot1Start;
 
-  // console.log("isOverlap+++++++++++++++++++++", overlapCondition1 || overlapCondition2);
+  console.log("isOverlap+++++++++++++++++++++", overlapCondition1 || overlapCondition2);
 
   // Check if the overlap conditions are met
   return overlapCondition1 || overlapCondition2;
@@ -530,12 +583,17 @@ function findSuitableTimeSlot(availableTimeSlots, bookingDuration) {
 function calculateAvailableTimeSlots(existingBookings, bookingDuration, from, to) {
   // console.log("existingBookings", existingBookings, bookingDuration, from, to);
   const bookingDurationMs = calculateBookingDurationMilliseconds(bookingDuration);
-  // console.log("bookingDurationMs", bookingDurationMs);
+  // console.log("calculateAvailableTimeSlots bookingDurationMs", bookingDurationMs);
   const timeSlots = generateTimeSlots(from, to, 30);
-  console.log("timeSlots", timeSlots);
+  // console.log("timeSlots", timeSlots);
 
   const availableTimeSlots = timeSlots.filter((slot) =>
-    !existingBookings.some((booking) => isOverlap(slot, booking, bookingDurationMs))
+    !existingBookings.some((booking) => {
+      // console.log("slot", slot);
+      // console.log("booking", booking);
+      // console.log("bookingDurationMs", bookingDurationMs);
+      return isOverlap(slot, booking, bookingDurationMs)
+    })
   );
 
   return availableTimeSlots;

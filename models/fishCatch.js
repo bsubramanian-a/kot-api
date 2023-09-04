@@ -25,7 +25,7 @@ const fishCatchSchema = new Schema({
   isCommunityFishCatch: { type: Boolean },
   createdBy: { type: String },
   modifiedBy: { type: String },
-  isCommunityFishCatch: { type: Boolean }
+  isCommunityFishCatch: { type: Boolean },
 },
 {
   timestamps: true

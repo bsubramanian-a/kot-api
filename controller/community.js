@@ -134,7 +134,22 @@ action.getAllCommunities = async (query) => {
   }
 };
 
+action.getNearByCommunities = async (query) => {
+  try {
+    let queryData={_id: query.user}
 
+    const nearbyCommunities = await communityService.getNearByCommunities(queryData);
+    
+    return defaultFunction.success({
+      response: nearbyCommunities,
+      message: "Nearby Communities listed successfully",
+    });
+
+  } catch (error) {
+    logger.error("Failed while listing Recommended Communities", error);
+    return defaultFunction.somethingWentWrong({ error });
+  }
+};
 
 // action.getBoatDetail = async (query) => {
 //   try {

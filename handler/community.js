@@ -1,5 +1,5 @@
 const defaultFunction = require('../core/responser');
-const { addCommunity,updateCommunity,getAllCommunities,addCommunityPost,getCommunityFeed, followOrUnfollowCommunity, getAllRecommendedCommunities } = require("../controller/community");
+const { addCommunity,updateCommunity,getAllCommunities,addCommunityPost,getCommunityFeed, followOrUnfollowCommunity, getAllRecommendedCommunities, getNearByCommunities } = require("../controller/community");
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 const url = require("url");
@@ -31,7 +31,9 @@ module.exports.init = async (req, res) => {
       case pathname === '/follow-or-unfollow' && req.method === "POST":
         return await followOrUnfollowCommunity(req.body);
       case pathname === '/communityFeed' && req.method === "GET":
-        return await getCommunityFeed(req.query);          
+        return await getCommunityFeed(req.query);    
+      case pathname === '/near-by-communities' && req.method === "GET":
+        return await getNearByCommunities(req.query);          
       default:
         return defaultFunction.handlerNotFound();
     }

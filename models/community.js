@@ -16,7 +16,7 @@ const communitySchema = new Schema({
   },
   topic: [{ type: mongoose.Schema.Types.ObjectId, ref: 'communityTopic' }],
   people: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],
-  follow: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],
+  // follow: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],
   privacy: { type: Boolean, default: true },
   follow: [
     { type: mongoose.Schema.Types.ObjectId, ref: "userdetail" }

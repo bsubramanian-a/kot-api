@@ -7,6 +7,8 @@ const userModel = require("../models/user");
 const communityTopic = require("../models/communityTopic")
 const interest = require("../models/interest")
 const action = {};
+const geolib = require('geolib');
+const NodeGeocoder = require('node-geocoder');
 
 /**
  * 
@@ -78,8 +80,16 @@ action.getAllCommunities = async (query) => {
       const communities = await communityModel.find();
       // Populate the "people" field for each community
       const populatedCommunities = await Promise.all(communities.map(async community => {
-        const populatedCommunity = await community.populate("people");
-        const populateTopicCommunity = await populatedCommunity.populate('topic');
+        const populatedCommunity = await community.populate({
+          path: "people",
+          populate: {
+            path: "userDetail"
+          }
+        });
+
+        const populatedFollow = await populatedCommunity.populate('follow');
+
+        const populateTopicCommunity = await populatedFollow.populate('topic');
         return populateTopicCommunity;
       }));
 
@@ -129,6 +139,101 @@ action.getAllRecommendedCommunities = async (query) => {
   }
 };
 
+function calculateDistance(userCoords, communityCoords) {
+  // console.log("calculateDistance.......");
+  // console.log("userCoords.......", userCoords);
+  // console.log("communityCoords.......", communityCoords);
+  return geolib.getDistance(userCoords, communityCoords);
+}
+
+action.getNearByCommunities = async (query) => {
+  try {
+    const user = await userModel.findOne(query).populate("userDetail");
+
+    const userAddress = `${user?.userDetail?.address},${user?.userDetail?.city},${user?.userDetail?.zip}`;
+
+    const options = {
+      provider: 'google',
+    
+      // Optional depending on the providers
+      apiKey: process.env.GOOGLE_API_KEY, // for Mapquest, OpenCage, Google Premier
+      formatter: null // 'gpx', 'string', ...
+    };
+
+    const geocoder = NodeGeocoder(options);
+
+    const userCoordinates = await geocoder.geocode(userAddress);
+
+    if (userCoordinates.length > 0) {
+      const userCoords = {
+        latitude: userCoordinates[0].latitude,
+        longitude: userCoordinates[0].longitude,
+      };
+      
+      // Find nearby communities
+      const maxDistance = 10000; // Maximum distance in meters (adjust as needed)
+      const communities = await communityModel.find(); // Assuming you're using Mongoose
+
+      // const nearbyCommunities = [];
+      
+      // for (const community of communities) {
+      //   // console.log("community id++++++++++", community?._id);
+      //   const communityCoords = {
+      //     latitude: community?.location?.lat,
+      //     longitude: community?.location?.lng,
+      //   };
+
+      //   if(communityCoords?.latitude && communityCoords?.longitude){
+      //     const distance = calculateDistance(userCoords, communityCoords);
+
+      //     // console.log("distance", distance);
+        
+      //     if (distance <= maxDistance) {
+      //       // console.log(`Community '${community.name}' is nearby. Distance: ${distance} meters.`);
+      //       nearbyCommunities?.push(community);
+      //     }
+      //   }
+      // }
+
+      const populatedCommunities = await Promise.all(communities.map(async community => {
+        // console.log("each nearby community------------", community);
+        const communityCoords = {
+          latitude: community?.location?.lat,
+          longitude: community?.location?.lng,
+        };
+
+        if(communityCoords?.latitude && communityCoords?.longitude){
+          const distance = calculateDistance(userCoords, communityCoords);
+
+          // console.log("distance", distance);
+        
+          if (distance <= maxDistance) {
+            // console.log(`Community '${community.name}' is nearby. Distance: ${distance} meters.`);
+            const populatedCommunity = await community.populate("people");
+            const populateTopicCommunity = await populatedCommunity.populate('topic');
+
+            return populateTopicCommunity;
+            // nearbyCommunities?.push(community);
+          }
+        }
+      }));
+
+      // console.log("populatedCommunities........", populatedCommunities);
+
+      return {
+        nearbyCommunities: populatedCommunities.filter(community => community !== undefined)
+      };
+    } else {
+      console.error('User address not found.');
+      return {
+        nearbyCommunities: []
+      };
+    }
+  } catch (error) {
+    logger.error('Error while fetching recommended communities', error);
+    throw error;
+  }
+};
 
 action.followOrUnfollowCommunity = async(query, data)=> {
   // console.log(query, data);

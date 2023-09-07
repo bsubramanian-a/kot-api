@@ -19,7 +19,7 @@ action.addBooking = async data => {
 }
 
 action.getExistingBookings = async (boatId, fromDate, toDate, _id) => {
-  console.log("boatId.......", boatId);
+  //console.log("boatId.......", boatId);
   try {
     const existingBookings = await bookingModel.find({
       _id: { $ne: _id },
@@ -36,7 +36,7 @@ action.getExistingBookings = async (boatId, fromDate, toDate, _id) => {
 };
 
 action.getExistingBookingsForBoat = async (boatId, fromDate, toDate) => {
-  console.log("boatId.......", boatId);
+  //console.log("boatId.......", boatId);
   try {
     const existingBookings = await bookingModel.find({
       boat: boatId,

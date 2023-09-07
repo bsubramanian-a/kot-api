@@ -4,6 +4,7 @@ const boatService = require("../services/boat");
 const bookingService = require("../services/booking");
 const boatModel = require("../models/boat");
 const bookingModel = require("../models/booking");
+const moment = require('moment');
 // const userDetailModel = require("../models/userDetail");
 
 const action = {};
@@ -84,7 +85,7 @@ action.getBoatDetails = async (query) => {
       queryData["$or"] = searchQuery
     }
 
-    console.log("queryData", queryData);
+    // console.log("queryData", queryData);
 
     const boatDetail = await boatService.listBoat(queryData);
     
@@ -125,7 +126,7 @@ action.listBoatByType = async (query) => {
       queryData["$or"] = searchQuery
     }
 
-    console.log("queryData", queryData);
+    // console.log("queryData", queryData);
 
     const boatDetail = await boatService.listBoat(queryData);
     
@@ -163,7 +164,7 @@ action.listBoat = async (query) => {
 };
 
 // action.searchBoat = async (query) => {
-//   console.log(query);
+//   // console.log(query);
 //   try {
 //     let queryData={
 //       "status":1
@@ -182,7 +183,7 @@ action.listBoat = async (query) => {
 //       let minPrice = query.pricePerDay.split("-")[0];
 //       let maxPrice = query.pricePerDay.split("-")[1];
 //       let pricePerDay = { $gte: +minPrice, $lte: +maxPrice }
-//       console.log("pricePerDay", pricePerDay);
+//       // console.log("pricePerDay", pricePerDay);
 //       searchQuery.push({
 //         pricePerDay
 //       });
@@ -191,7 +192,7 @@ action.listBoat = async (query) => {
 //       queryData["$or"] = searchQuery
 //     }
       
-//     console.log("queryData", queryData);
+//     // console.log("queryData", queryData);
 
 //     const boatDetail = await boatService.listBoat(queryData);
     
@@ -208,18 +209,18 @@ action.listBoat = async (query) => {
 // };
 
 // const checkSlotAvailability = async (boat, fromDate, toDate, howLonginWater) => {
-//   // console.log("checkSlotAvailability", boat);
-//   // console.log("fromDate", fromDate);
-//   // console.log("toDate", toDate);
-//   // console.log("howLonginWater", howLonginWater);
+//   // // console.log("checkSlotAvailability", boat);
+//   // // console.log("fromDate", fromDate);
+//   // // console.log("toDate", toDate);
+//   // // console.log("howLonginWater", howLonginWater);
 
 //   const existingBookings = await bookingService.getExistingBookingsForBoat(boat, fromDate, toDate);
 
-//   // console.log("existingBookings", existingBookings);
+//   // // console.log("existingBookings", existingBookings);
 
 //   const availableTimeSlots = calculateAvailableTimeSlots(existingBookings, howLonginWater, fromDate, toDate);
 
-//   // console.log("availableTimeSlots", availableTimeSlots);
+//   // // console.log("availableTimeSlots", availableTimeSlots);
 
 //   const bookingDurationMs = calculateBookingDurationMilliseconds(howLonginWater);
 //   const suitableTimeSlot = findSuitableTimeSlot(availableTimeSlots, bookingDurationMs);
@@ -244,13 +245,13 @@ const checkSlotAvailability = (boat, fromDate, toDate, howLonginWater) => {
   return new Promise(async (resolve, reject) => {
     const existingBookings = await bookingService.getExistingBookingsForBoat(boat, fromDate, toDate);
 
-    // console.log("existingBookings", existingBookings);
+    // // console.log("existingBookings", existingBookings);
 
     const howLonginWaterConverted = parseHowLongInWater(howLonginWater);
 
     const availableTimeSlots = calculateAvailableTimeSlots(existingBookings, howLonginWaterConverted, fromDate, toDate);
 
-    console.log("availableTimeSlots", availableTimeSlots);
+    // console.log("availableTimeSlots", availableTimeSlots);
 
     const bookingDurationMs = calculateBookingDurationMilliseconds(howLonginWaterConverted);
     const suitableTimeSlot = findSuitableTimeSlot(availableTimeSlots, bookingDurationMs);
@@ -274,23 +275,129 @@ const checkSlotAvailability = (boat, fromDate, toDate, howLonginWater) => {
   });
 };
 
+// Function to generate time slots between 9 AM and 6 PM
+function generateTimeSlots(fromDate, toDate, howLongInWater) {
+  //console.log("coming inside generateTimeSlots");
+  const start = moment(fromDate).hour(9).minute(0).second(0);
+  const end = moment(toDate).hour(20).minute(0).second(0); // Assuming you want slots until 8 PM
+
+  const duration = moment.duration(howLongInWater, 'hours');
+  const slots = [];
+  //console.log("slots",slots);
+  while (start.isBefore(end)) {
+    //console.log("coming inside isBefore");
+    //console.log("start.clone()",start.clone());
+    slots.push(start.clone());
+    start.add(duration); // Move to the next slot (2 hours apart)
+    //console.log("start.add(duration)",start.add(duration));
+  }
+
+  return slots;
+}
+
+
+
+
 action.searchBoat = async (query) => {
   try {
     let queryData = {
       status: 1,
     };
 
-    // console.log("queryData before", queryData);
+    // // console.log("queryData before", queryData);
 
     if(query?.fromDate && query?.toDate){
-      const fromDate = new Date(query.fromDate);
-      const toDate = new Date(query.toDate);
+      const fromDate = moment(query.fromDate);
+      const toDate = moment(query.toDate);
+      const boatType = query.boatType;
+      const howLonginWater = query.howLonginWater;
+      const timeSlots = generateTimeSlots(fromDate, toDate, 2);
+
+      // Step 1 : Find all boats for the boat type
+
+      const boatList = await boatModel.find({
+        boatType
+      });
+
+      console.log("boatList", boatList);
+      const boatIds = boatList.map(boat => boat.id);
+      console.log("=========");
+      console.log("boatIds", boatIds);
 
       // Step 1: Get all bookingList within the given from, to
       const bookingsWithinDateRange = await bookingModel.find({
-        from: { $lte: toDate },
-        to: { $gte: fromDate },
+        from: { $lte: toDate.toDate() }, // Convert moment object to Date
+        to: { $gte: fromDate.toDate() },   // Convert moment object to Date
+        boat: { $in: boatIds },
+        bookingTime: { $exists: true } // Only include bookings that have a bookingTime property
       });
+      console.log("=========");
+      console.log("bookingsWithinDateRange", bookingsWithinDateRange);
+
+      console.log("timeSlots", timeSlots);
+
+      const availableSlots = timeSlots.filter((slot) => {
+        const slotStart = moment(slot.from); // Convert to Moment.js object
+        const slotEnd = moment(slot.to); // Convert to Moment.js object
+      
+        // Check if there is any booking that clashes with the slot
+        const isOverlap = bookingsWithinDateRange.some((booking) => {
+          const bookingStart = moment(booking.bookingTime);
+          const bookingEnd = moment(booking.bookingEndTime);
+      
+          // Check for overlap by comparing time ranges
+          return (
+            (slotStart.isBefore(bookingEnd) || slotStart.isSame(bookingEnd)) &&
+            (slotEnd.isAfter(bookingStart) || slotEnd.isSame(bookingStart))
+          );
+        });
+      
+        return !isOverlap;
+      });
+      
+
+      console.log("availableSlots",availableSlots)
+
+      // ...
+
+      // Assuming you have already calculated `nextAvailableSlot` as in your code
+      if (availableSlots.length > 0) {
+        const nextAvailableSlot = availableSlots[0];
+        console.log('Next available slot:', nextAvailableSlot);
+
+        // Check if 'from' is a valid moment object
+        if (moment.isMoment(nextAvailableSlot)) {
+          console.log('Formatted Next available slot:', nextAvailableSlot);
+
+          // Find the available boats for this slot
+          const boatsAvailableForSlot = boatList.filter((boat) => {
+            // Check if there is any booking that clashes with the slot for this boat
+            const isOverlap = bookingsWithinDateRange.some((booking) => {
+              const bookingStart = moment(booking.bookingTime);
+              const bookingEnd = moment(booking.bookingEndTime);
+
+              // Check for overlap by comparing time ranges
+              return (
+                (nextAvailableSlot.isBefore(bookingEnd) || nextAvailableSlot.isSame(bookingEnd)) &&
+                (nextAvailableSlot.isAfter(bookingStart) || nextAvailableSlot.isSame(bookingStart))
+              );
+            });
+
+            return !isOverlap;
+          });
+
+          if (boatsAvailableForSlot.length > 0) {
+            console.log('Boats available for this slot:', boatsAvailableForSlot);
+          } else {
+            console.log('No boats available for this slot.');
+          }
+        } else {
+          console.log('Invalid "from" property in nextAvailableSlot:', nextAvailableSlot.from);
+        }
+      } else {
+        console.log('No available slots within the specified time range.');
+      }
+
 
       // console.log(":bookingsWithinDateRange", bookingsWithinDateRange);
 
@@ -304,7 +411,7 @@ action.searchBoat = async (query) => {
       // Convert the Set back to an array if needed
       const uniqueBoatIdsWithinDateRange = [...boatIdsWithinDateRange];
 
-      // console.log("uniqueBoatIdsWithinDateRange", uniqueBoatIdsWithinDateRange);
+      // // console.log("uniqueBoatIdsWithinDateRange", uniqueBoatIdsWithinDateRange);
 
       // Step 2: Get list of boats that don't satisfy howLonginWater slot
       const boatsWithShortSlots = await Promise.all(uniqueBoatIdsWithinDateRange
@@ -312,7 +419,7 @@ action.searchBoat = async (query) => {
           return checkSlotAvailability(boatId, fromDate, toDate, query.howLonginWater);
         }));
 
-      console.log("boatsWithShortSlots", boatsWithShortSlots);
+      // console.log("boatsWithShortSlots", boatsWithShortSlots);
 
       // // Step 3: Get the boatIds of boats with short slots
       // const boatIdsWithShortSlots = [...new Set(boatsWithShortSlots)];
@@ -335,7 +442,7 @@ action.searchBoat = async (query) => {
       // queryData["_id"] = { $nin: bookedBoats };
     }
 
-    // console.log("queryData after", queryData);
+    // // console.log("queryData after", queryData);
 
     for (const paramName in query) {
       if (paramName !== "status") {
@@ -360,7 +467,7 @@ action.searchBoat = async (query) => {
       }
     }
 
-    // console.log("query luxury", query.isLuxury, query.isLuxury === "true");
+    // // console.log("query luxury", query.isLuxury, query.isLuxury === "true");
 
     const boatDetail = await boatService.listBoat(queryData);
 
@@ -488,9 +595,9 @@ function parseHowLongInWater(howLongParam) {
 
 // Function to calculate booking duration in milliseconds
 function calculateBookingDurationMilliseconds(bookingDuration) {
-  console.log("calculateBookingDurationMilliseconds", bookingDuration, !isNaN(bookingDuration), typeof bookingDuration);
+  // console.log("calculateBookingDurationMilliseconds", bookingDuration, !isNaN(bookingDuration), typeof bookingDuration);
   if (!isNaN(bookingDuration) && typeof bookingDuration === 'number') {
-    console.log("number")
+    // console.log("number")
     // Handle "multi_day" as a special case where the user specifies the number of days
     // For example, if the user enters 2, the duration will be 2 days (48 hours)
     return 24 * bookingDuration * 60 * 60 * 1000;
@@ -507,45 +614,45 @@ function calculateBookingDurationMilliseconds(bookingDuration) {
 }
 
 // Function to generate time slots between 'from' and 'to' dates
-function generateTimeSlots(from, to, intervalInMinutes) {
-  const timeSlots = [];
-  const currentTime = new Date(from);
-  currentTime.setUTCHours(9, 0, 0, 0);
-  const toTime = new Date(to);
-  toTime.setUTCHours(18, 0, 0, 0);
+// function generateTimeSlots(from, to, intervalInMinutes) {
+//   const timeSlots = [];
+//   const currentTime = new Date(from);
+//   currentTime.setUTCHours(9, 0, 0, 0);
+//   const toTime = new Date(to);
+//   toTime.setUTCHours(18, 0, 0, 0);
 
-  // console.log("currentTime", currentTime);
-  // console.log("to", toTime);
-  // console.log("currentTime < to", currentTime < toTime);
+//   // // console.log("currentTime", currentTime);
+//   // // console.log("to", toTime);
+//   // // console.log("currentTime < to", currentTime < toTime);
 
-  while (currentTime <= toTime) {
-    // console.log("inside while");
-    timeSlots.push(new Date(currentTime));
-    currentTime.setMinutes(currentTime.getMinutes() + intervalInMinutes);
-  }
-  return timeSlots;
-}
+//   while (currentTime <= toTime) {
+//     // // console.log("inside while");
+//     timeSlots.push(new Date(currentTime));
+//     currentTime.setMinutes(currentTime.getMinutes() + intervalInMinutes);
+//   }
+//   return timeSlots;
+// }
 
 function isOverlap(slot1, slot2, bookingDurationMs) {
-  // console.log("isOverlap.........");
-  // console.log("slot1.........", slot1);
-  // console.log("slot2.........", slot2);
-  // console.log("isOverlap bookingDurationMs.........", bookingDurationMs);
+  // // console.log("isOverlap.........");
+  // // console.log("slot1.........", slot1);
+  // // console.log("slot2.........", slot2);
+  // // console.log("isOverlap bookingDurationMs.........", bookingDurationMs);
   
   // Convert the date-time strings to Date objects
   const slot1Start = new Date(slot1);
   const slot1End = new Date(slot1Start);
   slot1End.setMilliseconds(slot1End.getMilliseconds() + bookingDurationMs);
 
-  // console.log("slot1Start", slot1Start);
-  // console.log("slot1End", slot1End);
+  // // console.log("slot1Start", slot1Start);
+  // // console.log("slot1End", slot1End);
 
   // Convert slot2's bookingTime and bookingEndTime to Date objects
   const slot2Start = new Date(slot2.bookingTime);
   const slot2End = new Date(slot2.bookingEndTime);
 
-  // console.log("slot2Start", slot2Start);
-  // console.log("slot2End", slot2End);
+  // // console.log("slot2Start", slot2Start);
+  // // console.log("slot2End", slot2End);
 
   // Check if the end of slot1 is after the start of slot2, and the start of slot1 is before the end of slot2
   const overlapCondition1 = slot1Start <= slot2Start && slot1End >= slot2Start;
@@ -553,7 +660,7 @@ function isOverlap(slot1, slot2, bookingDurationMs) {
   // Check if the end of slot2 is after the start of slot1, and the start of slot2 is before the end of slot1
   const overlapCondition2 = slot2Start <= slot1Start && slot2End >= slot1Start;
 
-  console.log("isOverlap+++++++++++++++++++++", overlapCondition1 || overlapCondition2);
+  //// console.log("isOverlap+++++++++++++++++++++", overlapCondition1 || overlapCondition2);
 
   // Check if the overlap conditions are met
   return overlapCondition1 || overlapCondition2;
@@ -562,15 +669,15 @@ function isOverlap(slot1, slot2, bookingDurationMs) {
 
 // Function to find a suitable time slot for booking
 function findSuitableTimeSlot(availableTimeSlots, bookingDuration) {
-  // console.log("findSuitableTimeSlot+++++++");
-  // console.log("bookingDuration", bookingDuration);
+  // // console.log("findSuitableTimeSlot+++++++");
+  // // console.log("bookingDuration", bookingDuration);
 
   for (const slot of availableTimeSlots) {
     const dateTime = new Date(slot);
     const dateTimeInMilliSeconds = dateTime.getTime();
 
-    // console.log("slot.duration", dateTimeInMilliSeconds);
-    // console.log("bookingDuration", bookingDuration);
+    // // console.log("slot.duration", dateTimeInMilliSeconds);
+    // // console.log("bookingDuration", bookingDuration);
 
     if (dateTimeInMilliSeconds >= bookingDuration) {
       return slot;
@@ -581,17 +688,17 @@ function findSuitableTimeSlot(availableTimeSlots, bookingDuration) {
 
 // Function to calculate available time slots
 function calculateAvailableTimeSlots(existingBookings, bookingDuration, from, to) {
-  // console.log("existingBookings", existingBookings, bookingDuration, from, to);
+  // // console.log("existingBookings", existingBookings, bookingDuration, from, to);
   const bookingDurationMs = calculateBookingDurationMilliseconds(bookingDuration);
-  // console.log("calculateAvailableTimeSlots bookingDurationMs", bookingDurationMs);
+  // // console.log("calculateAvailableTimeSlots bookingDurationMs", bookingDurationMs);
   const timeSlots = generateTimeSlots(from, to, 30);
-  // console.log("timeSlots", timeSlots);
+  // // console.log("timeSlots", timeSlots);
 
   const availableTimeSlots = timeSlots.filter((slot) =>
     !existingBookings.some((booking) => {
-      // console.log("slot", slot);
-      // console.log("booking", booking);
-      // console.log("bookingDurationMs", bookingDurationMs);
+      // // console.log("slot", slot);
+      // // console.log("booking", booking);
+      // // console.log("bookingDurationMs", bookingDurationMs);
       return isOverlap(slot, booking, bookingDurationMs)
     })
   );
@@ -608,20 +715,20 @@ action.updateBoatBooking = async (data) => {
 
     const booking = await bookingModel.findOne(query);
 
-    console.log("data._id", data._id);
+    // console.log("data._id", data._id);
 
     const existingBookings = await bookingService.getExistingBookings(booking.boat, data.from, data.to, data._id);
 
-    console.log("existingBookings", existingBookings);
+    // console.log("existingBookings", existingBookings);
 
     const availableTimeSlots = calculateAvailableTimeSlots(existingBookings, data.howLongOnWater, data.from, data.to);
 
-    console.log("availableTimeSlots", availableTimeSlots);
+    // console.log("availableTimeSlots", availableTimeSlots);
 
     const bookingDurationMs = calculateBookingDurationMilliseconds(data.howLongOnWater);
     const suitableTimeSlot = findSuitableTimeSlot(availableTimeSlots, bookingDurationMs);
 
-    console.log("suitableTimeSlot", suitableTimeSlot);
+    // console.log("suitableTimeSlot", suitableTimeSlot);
 
     if (suitableTimeSlot) {
       const bookingEndTime = new Date(suitableTimeSlot);

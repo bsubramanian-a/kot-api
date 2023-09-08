@@ -256,7 +256,6 @@ const checkSlotAvailability = (boat, fromDate, toDate, howLonginWater) => {
     const bookingDurationMs = calculateBookingDurationMilliseconds(howLonginWaterConverted);
     const suitableTimeSlot = findSuitableTimeSlot(availableTimeSlots, bookingDurationMs);
 
-
     // At the end, resolve or reject based on your conditions
     if (suitableTimeSlot) {
       const bookingEndTime = new Date(suitableTimeSlot);
@@ -295,9 +294,6 @@ function generateTimeSlots(fromDate, toDate, howLongInWater) {
   return slots;
 }
 
-
-
-
 action.searchBoat = async (query) => {
   try {
     let queryData = {
@@ -307,8 +303,8 @@ action.searchBoat = async (query) => {
     // // console.log("queryData before", queryData);
 
     if(query?.fromDate && query?.toDate){
-      const fromDate = moment(query.fromDate);
-      const toDate = moment(query.toDate);
+      const fromDate = new Date(query.fromDate);
+      const toDate = new Date(query.toDate);
       const boatType = query.boatType;
       const howLonginWater = query.howLonginWater;
       const timeSlots = generateTimeSlots(fromDate, toDate, 2);
@@ -324,10 +320,12 @@ action.searchBoat = async (query) => {
       console.log("=========");
       console.log("boatIds", boatIds);
 
+      console.log("fromDate", fromDate);
+
       // Step 1: Get all bookingList within the given from, to
       const bookingsWithinDateRange = await bookingModel.find({
-        from: { $lte: toDate.toDate() }, // Convert moment object to Date
-        to: { $gte: fromDate.toDate() },   // Convert moment object to Date
+        from: { $lte: toDate }, // Convert moment object to Date
+        to: { $gte: fromDate },   // Convert moment object to Date
         boat: { $in: boatIds },
         bookingTime: { $exists: true } // Only include bookings that have a bookingTime property
       });
@@ -344,6 +342,8 @@ action.searchBoat = async (query) => {
         const isOverlap = bookingsWithinDateRange.some((booking) => {
           const bookingStart = moment(booking.bookingTime);
           const bookingEnd = moment(booking.bookingEndTime);
+          console.log("bookingStart", bookingStart)
+          console.log("bookingEnd", bookingEnd)
       
           // Check for overlap by comparing time ranges
           return (
@@ -385,6 +385,8 @@ action.searchBoat = async (query) => {
 
             return !isOverlap;
           });
+
+          console.log("boatsAvailableForSlot+++++++", boatsAvailableForSlot);
 
           if (boatsAvailableForSlot.length > 0) {
             console.log('Boats available for this slot:', boatsAvailableForSlot);
@@ -715,43 +717,125 @@ action.updateBoatBooking = async (data) => {
 
     const booking = await bookingModel.findOne(query);
 
+    const fromDate = moment(booking.from);
+    const toDate = moment(booking.to);
+    const timeSlots = generateTimeSlots(fromDate, toDate, 2);
+
     // console.log("data._id", data._id);
 
     const existingBookings = await bookingService.getExistingBookings(booking.boat, data.from, data.to, data._id);
 
-    // console.log("existingBookings", existingBookings);
+    const boatList = await boatModel.find({
+      _id: booking.boat
+    });
 
-    const availableTimeSlots = calculateAvailableTimeSlots(existingBookings, data.howLongOnWater, data.from, data.to);
+    const availableSlots = timeSlots.filter((slot) => {
+      const slotStart = moment(slot.from); // Convert to Moment.js object
+      const slotEnd = moment(slot.to); // Convert to Moment.js object
+    
+      // Check if there is any booking that clashes with the slot
+      const isOverlap = existingBookings.some((booking) => {
+        const bookingStart = booking.bookingTime;
+        const bookingEnd = booking.bookingEndTime;
+    
+        // Check for overlap by comparing time ranges
+        return (
+          (slotStart.isBefore(bookingEnd) || slotStart.isSame(bookingEnd)) &&
+          (slotEnd.isAfter(bookingStart) || slotEnd.isSame(bookingStart))
+        );
+      });
+    
+      return !isOverlap;
+    });
 
-    // console.log("availableTimeSlots", availableTimeSlots);
+    console.log("availableSlots", availableSlots);
 
-    const bookingDurationMs = calculateBookingDurationMilliseconds(data.howLongOnWater);
-    const suitableTimeSlot = findSuitableTimeSlot(availableTimeSlots, bookingDurationMs);
+    if (availableSlots.length > 0) {
+      const nextAvailableSlot = availableSlots[0];
+      console.log('Next available slot:', nextAvailableSlot);
 
-    // console.log("suitableTimeSlot", suitableTimeSlot);
+      // Check if 'from' is a valid moment object
+      if (moment.isMoment(nextAvailableSlot)) {
+        console.log('Formatted Next available slot:', nextAvailableSlot);
 
-    if (suitableTimeSlot) {
-      const bookingEndTime = new Date(suitableTimeSlot);
-      bookingEndTime.setMilliseconds(bookingEndTime.getMilliseconds() + bookingDurationMs);
+        // Find the available boats for this slot
+        const boatsAvailableForSlot = boatList.filter((boat) => {
+          // Check if there is any booking that clashes with the slot for this boat
+          const isOverlap = existingBookings.some((booking) => {
+            const bookingStart = booking.bookingTime;
+            const bookingEnd = booking.bookingEndTime;
 
-      const lastAvailableTimeSlot = availableTimeSlots[availableTimeSlots.length - 1];
+            // Check for overlap by comparing time ranges
+            return (
+              (nextAvailableSlot.isBefore(bookingEnd) || nextAvailableSlot.isSame(bookingEnd)) &&
+              (nextAvailableSlot.isAfter(bookingStart) || nextAvailableSlot.isSame(bookingStart))
+            );
+          });
 
-      if (bookingEndTime <= lastAvailableTimeSlot) {
-        data.bookingTime = suitableTimeSlot;
-        data.bookingEndTime = bookingEndTime;
-
-        const dealData = await bookingService.updateBoatBooking(query, data);
-        return defaultFunction.success({
-          response: null,
-          message: "Boat booking updated successfully!",
-          total: 1
+          return !isOverlap;
         });
+
+        console.log("boatsAvailableForSlot+++++++", boatsAvailableForSlot);
+
+        if (boatsAvailableForSlot.length > 0) {
+          console.log('Boats available for this slot:', boatsAvailableForSlot);
+          console.log("nextAvailableSlot", nextAvailableSlot);
+
+          // console.log("availableSlots[0]", nextAvailableSlot, availableSlots[0], new Date(availableSlots[0].format()).toISOString())
+
+          data.bookingTime = availableSlots[0]?.format('YYYY-MM-DD HH:mm:ss');
+          data.bookingEndTime = availableSlots[1]?.format('YYYY-MM-DD HH:mm:ss');
+
+          await bookingService.updateBoatBooking(query, data);
+
+          return defaultFunction.success({
+            response: null,
+            message: "Boat booking updated successfully!",
+            total: 1
+          });
+        } else {
+          return defaultFunction.somethingWentWrong({ message: "No available time slots for booking" });
+        }
       } else {
-        return defaultFunction.somethingWentWrong({ message: "No available time slots for booking" });
+        console.log('Invalid "from" property in nextAvailableSlot:', nextAvailableSlot.from);
       }
     } else {
-      return defaultFunction.somethingWentWrong({ message: "No available time slots for booking" });
+      console.log('No available slots within the specified time range.');
     }
+
+    // console.log("existingBookings", existingBookings);
+
+    // const availableTimeSlots = calculateAvailableTimeSlots(existingBookings, data.howLongOnWater, data.from, data.to);
+
+    // // console.log("availableTimeSlots", availableTimeSlots);
+
+    // const bookingDurationMs = calculateBookingDurationMilliseconds(data.howLongOnWater);
+    // const suitableTimeSlot = findSuitableTimeSlot(availableTimeSlots, bookingDurationMs);
+
+    // // console.log("suitableTimeSlot", suitableTimeSlot);
+
+    // if (suitableTimeSlot) {
+    //   const bookingEndTime = new Date(suitableTimeSlot);
+    //   bookingEndTime.setMilliseconds(bookingEndTime.getMilliseconds() + bookingDurationMs);
+
+    //   const lastAvailableTimeSlot = availableTimeSlots[availableTimeSlots.length - 1];
+
+    //   if (bookingEndTime <= lastAvailableTimeSlot) {
+    //     data.bookingTime = suitableTimeSlot;
+    //     data.bookingEndTime = bookingEndTime;
+
+    //     const dealData = await bookingService.updateBoatBooking(query, data);
+    //     return defaultFunction.success({
+    //       response: null,
+    //       message: "Boat booking updated successfully!",
+    //       total: 1
+    //     });
+    //   } else {
+    //     return defaultFunction.somethingWentWrong({ message: "No available time slots for booking" });
+    //   }
+    // } else {
+    //   return defaultFunction.somethingWentWrong({ message: "No available time slots for booking" });
+    // }
   } catch (error) {
     logger.error("Failed while updating boat booking", error);
     return defaultFunction.somethingWentWrong({ error: error, message: "Failed while updating boat booking" });

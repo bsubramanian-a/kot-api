@@ -63,6 +63,15 @@ action.listBoat = async (query) => {
   }
 }
 
+action.searchBoat = async (query) => {
+  try {
+    return await boatModel.find(query);
+  } catch (error) {
+    logger.error('Error while fetching boat list', error);
+    throw error
+  }
+}
+
 
   /**
    * Get delete boat detail

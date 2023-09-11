@@ -334,25 +334,29 @@ action.searchBoat = async (query) => {
 
       console.log("timeSlots", timeSlots);
 
-      const availableSlots = timeSlots.filter((slot) => {
-        const slotStart = moment(slot.from); // Convert to Moment.js object
-        const slotEnd = moment(slot.to); // Convert to Moment.js object
-      
-        // Check if there is any booking that clashes with the slot
-        const isOverlap = bookingsWithinDateRange.some((booking) => {
-          const bookingStart = moment(booking.bookingTime);
-          const bookingEnd = moment(booking.bookingEndTime);
-          console.log("bookingStart", bookingStart)
-          console.log("bookingEnd", bookingEnd)
-      
-          // Check for overlap by comparing time ranges
-          return (
-            (slotStart.isBefore(bookingEnd) || slotStart.isSame(bookingEnd)) &&
-            (slotEnd.isAfter(bookingStart) || slotEnd.isSame(bookingStart))
-          );
-        });
-      
-        return !isOverlap;
+      const availableSlots = timeSlots.filter((slot, index) => {
+        console.log("slot++++++++++++++++", slot);
+        if(index < timeSlots?.length - 1){
+          const slotStart = moment(slot); // Convert to Moment.js object
+          const slotEnd = moment(timeSlots[index + 1]); // Convert to Moment.js object
+        
+          // Check if there is any booking that clashes with the slot
+          const isOverlap = bookingsWithinDateRange.some((booking) => {
+            const bookingStart = moment(booking.bookingTime);
+            const bookingEnd = moment(booking.bookingEndTime);
+            console.log("bookingStart", bookingStart, slotStart)
+            console.log("bookingEnd", bookingEnd, slotEnd)
+        
+            // Check for overlap by comparing time ranges
+            return (
+              (slotStart.isBefore(bookingEnd) || slotStart.isSame(bookingEnd)) &&
+              (slotEnd.isAfter(bookingStart) || slotEnd.isSame(bookingStart))
+            );
+          });
+          return !isOverlap;
+        }
+
+        return false;
       });
       
 

@@ -148,8 +148,11 @@ const listCommentsWithReplies = async (postId) => {
 };
 
 action.listPost = async (query) => {
+  // console.log("query", query);
   try {
     const posts = await postModel.find(query).populate("user");
+
+    // console.log("posts", posts);
     //console.log("test");
 
     // return {

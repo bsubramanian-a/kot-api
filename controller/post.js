@@ -46,7 +46,7 @@ action.listMyPost = async (query) => {
     let queryPost = {
       status: 1,
       user: query.user,
-      _id:query.post
+      // _id:query.post
     }
 
     const posts = await postService.listPost(queryPost);

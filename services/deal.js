@@ -70,6 +70,23 @@ action.getDealsForProducts = async (productIds) => {
   }
 };
 
+// action.getDailyDealsProducts = async () => {
+//   try {
+//     const currentDate = new Date();
+//     console.log("currentDate", currentDate);
+
+//     // Extract the date part from currentDate
+//     const currentDateOnly = new Date(currentDate.toISOString().split('T')[0]);
+
+//     const dailyDealsProducts = await dealModel.find({
+//       endDate: currentDateOnly,
+//     });
+//     return dailyDealsProducts;
+//   } catch (error) {
+//     throw error;
+//   }
+// };
+
 action.getDailyDealsProducts = async () => {
   try {
     const currentDate = new Date();
@@ -79,7 +96,8 @@ action.getDailyDealsProducts = async () => {
     const currentDateOnly = new Date(currentDate.toISOString().split('T')[0]);
 
     const dailyDealsProducts = await dealModel.find({
-      endDate: currentDateOnly,
+      startDate: { $lte: currentDateOnly }, // Start date is less than or equal to today
+      endDate: { $gte: currentDateOnly },   // End date is greater than or equal to today
     });
     return dailyDealsProducts;
   } catch (error) {

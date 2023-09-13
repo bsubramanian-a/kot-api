@@ -98,19 +98,21 @@ action.likeFishCatch = async (query, data) => {
     try {
       const fishCatch = await fishCatchModel.find(query);
   
-      if (query.doLike) {
-        if (!fishCatch[0].likes.includes(query.user)) {
-          fishCatch[0].likes.push(query.user);
-          fishCatch[0].save();
-        }
-      } else {
-        const index = fishCatch[0].likes.indexOf(query.user);
-        if (index > -1) {
-          fishCatch[0].likes.splice(index, 1);
-          fishCatch[0].save();
+      if(fishCatch?.length > 0){
+        if (query.doLike) {
+          if (!fishCatch[0].likes.includes(query.user)) {
+            fishCatch[0].likes.push(query.user);
+            fishCatch[0].save();
+          }
+        } else {
+          const index = fishCatch[0].likes.indexOf(query.user);
+          if (index > -1) {
+            fishCatch[0].likes.splice(index, 1);
+            fishCatch[0].save();
+          }
         }
       }
-  
+     
       return fishCatch;
     } catch (error) {
       logger.error('Error while updating Fish Catch', error);

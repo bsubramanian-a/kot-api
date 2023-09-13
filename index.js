@@ -28,6 +28,7 @@ const license = require("./handler/license")
 const regulation = require("./handler/regulation")
 const faq = require("./handler/faq")
 const fishCatchComment = require("./handler/fishCatchComment")
+const fishingCharter = require("./handler/fishingCharter")
 
 dotenv.config();
 
@@ -206,6 +207,12 @@ const fishCatchCommentMiddleware = async (req, res, next) => {
   next(response);
 };
 
+const fishingCharterMiddleware = async (req, res, next) => {
+  const response = await fishingCharter.init(req, res);
+  res.json(JSON.parse(response.body));
+  next(response);
+};
+
 app.use('/dev/auth', authMiddleware);
 app.use('/dev/community', communityMiddleware);
 app.use('/dev/admin', adminMiddleware);
@@ -233,6 +240,7 @@ app.use('/dev/license',licenseMiddleware);
 app.use('/dev/regulation',regulationMiddleware);
 app.use('/dev/faq',faqMiddleware);
 app.use('/dev/fishCatchComment',fishCatchCommentMiddleware);
+app.use('/dev/fishingCharter',fishingCharterMiddleware);
 
 app.listen(4000, () => {
   console.log('Server is running on port 4000');

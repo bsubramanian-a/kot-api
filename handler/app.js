@@ -1,6 +1,6 @@
 const defaultFunction = require('../core/responser');
 const { listBoatType } = require("../controller/boatType");
-const { listBoat, searchBoat, bookBoat, listMyBooking, listBoatByType, getBoatDetails, updateBoatBooking } = require("../controller/boat");
+const { listBoat, searchBoat, bookBoat, listMyBooking, listBoatByType, getBoatDetails, updateBoatBooking, searchFishingCharter, updateFishingCharter } = require("../controller/boat");
 const { addPost, listMyPost, updatePost, deletePost,likePost } = require("../controller/post");
 const { addReport } = require("../controller/report");
 const { listFishType } = require("../controller/fishType");
@@ -49,6 +49,10 @@ module.exports.init = async (req,res) => {
         return await deletePost(req.query);
       case pathname === '/add-report' && req.method === "POST":
         return await addReport(req.body);
+      case pathname === '/search-fishing-charters' && req.method === "GET":
+        return await searchFishingCharter(req.query);
+      case pathname === '/update-fishing-charter-booking' && req.method === "PUT":
+        return await updateFishingCharter(req.body);
       default:
         return defaultFunction.handlerNotFound();
     }

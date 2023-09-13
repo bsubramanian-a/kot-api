@@ -3,8 +3,6 @@ const { addboat, getBoatDetail,getAllBoats, updateBoat, updateBoatStatus } = req
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 
-
-
 module.exports.init = async (req) => {
   const db = await coreDB.openDBConnection();
   logger.data("queryStringParameters",req.query);
@@ -13,6 +11,7 @@ module.exports.init = async (req) => {
   const pathname = parsedUrl.pathname;
   console.log("pathname",pathname);
   logger.data("db done");
+  
   try {
     switch (true) {
       // case pathname === '/' && req.method === "POST":

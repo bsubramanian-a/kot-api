@@ -24,7 +24,7 @@ action.updateFishingCharter = async (query, updateData) => {
 
 action.getFishingCharterDetail = async (query) => {
   try {
-    return await fishingCharterModel.findOne(query);
+    return await fishingCharterModel.findOne(query).populate('boat');
   } catch (error) {
     logger.error('Error while fetching fishingCharter detail', error);
     throw error;

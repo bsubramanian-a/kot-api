@@ -2,6 +2,7 @@ let mongoose = require("mongoose");
 let Schema = mongoose.Schema;
 const userDetailModel = require("./userDetail");
 const speciesModel = require('../models/species');
+const fishingCharter = require('../models/fishingCharter');
 
 const bookingSchema = new Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "userdetail", required: true },
@@ -29,11 +30,12 @@ const bookingSchema = new Schema({
   bookingEndTime: { type: String },
   isMultiDay: { type: Boolean },
   overnightHours: { type: String },
-  type: { type: String, enum: [ "boat", "fishingcharter" ] },
+  type: { type: String, enum: [ "boat", "fishingcharter" ], default: "boat" },
   groupSize: { type: Number },
-  date: { type: Date },
-  type: { type: String },
-  species: { type: mongoose.Schema.Types.ObjectId, ref: 'species', required: true },
+  startTime: { type: Date },
+  fishingCharter: { type: mongoose.Schema.Types.ObjectId, ref: 'fishingCharter', required: true },
+  price : { type: String },
+  cancellationTime: { type: String }
 },
   {
     timestamps: true

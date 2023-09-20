@@ -1,5 +1,5 @@
 const defaultFunction = require('../core/responser');
-const { addDeal, updateDeal, getDealDetail, listDeals, getProductsInCategoryWithDeals, getDailyDealsProducts } = require("../controller/deal"); // Import deal controller functions
+const { addDeal, updateDeal, getDealDetail, listDeals, getProductsInCategoryWithDeals, getDailyDealsProducts, getBestDeals, searchDealProducts } = require("../controller/deal"); // Import deal controller functions
 const logger = require('../core/logger');
 const coreDB = require("../core/db");
 
@@ -26,6 +26,10 @@ module.exports.init = async (req) => {
             return await getProductsInCategoryWithDeals(req.query);
         case pathname === '/daily-deals-products' && req.method === "GET":
             return await getDailyDealsProducts();
+        case pathname === '/best-deals' && req.method === "GET":
+          return await getBestDeals();
+        case pathname === '/search-deals' && req.method === "GET":
+          return await searchDealProducts(req.query);
         default:
             return defaultFunction.handlerNotFound();
     }

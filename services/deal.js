@@ -54,7 +54,7 @@ action.getDealDetail = async (query) => {
  */
 action.listDeals = async (query) => {
   try {
-    return await dealModel.find(query);
+    return await dealModel.find(query).populate("product_id");
   } catch (error) {
     logger.error('Error while fetching deals list', error);
     throw error;
@@ -73,14 +73,14 @@ action.getDealsForProducts = async (productIds) => {
 // action.getDailyDealsProducts = async () => {
 //   try {
 //     const currentDate = new Date();
-//     console.log("currentDate", currentDate);
 
 //     // Extract the date part from currentDate
 //     const currentDateOnly = new Date(currentDate.toISOString().split('T')[0]);
 
 //     const dailyDealsProducts = await dealModel.find({
-//       endDate: currentDateOnly,
-//     });
+//       startDate: { $lte: currentDateOnly }, // Start date is less than or equal to today
+//       endDate: { $gte: currentDateOnly },   // End date is greater than or equal to today
+//     }).populate("product_id");
 //     return dailyDealsProducts;
 //   } catch (error) {
 //     throw error;
@@ -90,19 +90,98 @@ action.getDealsForProducts = async (productIds) => {
 action.getDailyDealsProducts = async () => {
   try {
     const currentDate = new Date();
-    console.log("currentDate", currentDate);
-
-    // Extract the date part from currentDate
     const currentDateOnly = new Date(currentDate.toISOString().split('T')[0]);
 
-    const dailyDealsProducts = await dealModel.find({
-      startDate: { $lte: currentDateOnly }, // Start date is less than or equal to today
-      endDate: { $gte: currentDateOnly },   // End date is greater than or equal to today
-    });
-    return dailyDealsProducts;
+    const categoriesWithDeals = await dealModel.aggregate([
+      {
+        $match: {
+          startDate: { $lte: currentDateOnly },
+          endDate: { $gte: currentDateOnly }
+        }
+      },
+      {
+        $lookup: {
+          from: "products", // Assuming the products collection name is "products"
+          localField: "product_id",
+          foreignField: "_id",
+          as: "product"
+        }
+      },
+      {
+        $unwind: "$product"
+      },
+      {
+        $group: {
+          _id: "$product.category_id", // Group by category_id field
+          count: { $sum: 1 }        // Count the number of deals per category
+        }
+      },
+      {
+        $lookup: {
+          from: "productcategories", // Assuming the categories collection name is "productcategories"
+          localField: "_id",
+          foreignField: "_id",
+          as: "category"
+        }
+      },
+      {
+        $unwind: "$category"
+      },
+      {
+        $project: {
+          id: "$category._id",
+          categoryName: "$category.name",
+          _id: 0
+        }
+      }
+    ]);
+
+    return categoriesWithDeals;
   } catch (error) {
     throw error;
   }
 };
+
+action.getBestDeals = async () => {
+  try {
+    const bestDeals = await dealModel.find({
+      discountPercentage: { $gte: 60 }
+    }).populate("product_id");
+    return bestDeals;
+  } catch (error) {
+    throw error;
+  }
+};
+
+action.searchDealProducts = async (searchString) => {
+  // console.log("searchString...", searchString);
+  try {
+    const bestDeals = await dealModel.aggregate([
+      {
+        $lookup: {
+          from: "products",
+          localField: "product_id",
+          foreignField: "_id",
+          as: "product"
+        }
+      },
+      {
+        $unwind: "$product"
+      },
+      {
+        $match: {
+          "product.name": { $regex: searchString, $options: "i" }
+        }
+      }
+    ]);
+
+    console.log("bestDeals", bestDeals);
+
+    return bestDeals;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 module.exports = action;

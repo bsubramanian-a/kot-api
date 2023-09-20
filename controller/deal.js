@@ -95,17 +95,50 @@ action.getProductsInCategoryWithDeals = async (query) => {
 };
 
 action.getDailyDealsProducts = async () => {
-    try {
-      const dailyDealsProducts = await dealService.getDailyDealsProducts();
-      return defaultFunction.success({
-        response: dailyDealsProducts,
-        message: "Daily deals products fetched successfully",
-        total: dailyDealsProducts.length
-      });
-    } catch (error) {
-      logger.error("Failed to fetch daily deals products", error);
-      return defaultFunction.somethingWentWrong({ error });
+  try {
+    const dailyDealsProducts = await dealService.getDailyDealsProducts();
+    return defaultFunction.success({
+      response: dailyDealsProducts,
+      message: "Daily deals fetched successfully",
+    });
+  } catch (error) {
+    logger.error("Failed to fetch daily deals products", error);
+    return defaultFunction.somethingWentWrong({ error });
+  }
+};
+
+action.getBestDeals = async () => {
+  try {
+    const dailyDealsProducts = await dealService.getBestDeals();
+    return defaultFunction.success({
+      response: dailyDealsProducts,
+      message: "Best deals products fetched successfully",
+      total: dailyDealsProducts.length
+    });
+  } catch (error) {
+    logger.error("Failed to fetch daily deals products", error);
+    return defaultFunction.somethingWentWrong({ error });
+  }
+};
+
+action.searchDealProducts = async (query) => {
+  try {
+    const searchString = query?.searchString;
+    let dealProducts = [];
+
+    if(searchString){
+      dealProducts = await dealService.searchDealProducts(searchString);
     }
+    
+    return defaultFunction.success({
+      response: dealProducts,
+      message: "Products fetched successfully",
+      total: dealProducts.length
+    });
+  } catch (error) {
+    logger.error("Failed to fetch daily deals products", error);
+    return defaultFunction.somethingWentWrong({ error });
+  }
 };
 
 module.exports = action;

@@ -40,7 +40,7 @@ action.updateDeal = async (query, updateData) => {
  */
 action.getDealDetail = async (query) => {
   try {
-    return await dealModel.findOne(query);
+    return await dealModel.findOne(query).populate("product_id");
   } catch (error) {
     logger.error('Error while fetching deal detail', error);
     throw error;
@@ -131,6 +131,7 @@ action.getDailyDealsProducts = async () => {
         $project: {
           id: "$category._id",
           categoryName: "$category.name",
+          image: "$category.image",
           _id: 0
         }
       }

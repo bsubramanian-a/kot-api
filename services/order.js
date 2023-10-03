@@ -10,7 +10,9 @@ action.createOrder = async (data) => {
     const newOrder = new orderModal({
       user: data.user,
       items: data.items,
-      totalAmount: data.totalAmount
+      totalAmount: data.totalAmount,
+      discount_value: data.discount_value,
+      discount_type: data.discount_type
     });
     return await newOrder.save();
   } catch (error) {

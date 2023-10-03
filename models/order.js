@@ -14,6 +14,8 @@ const orderSchema = new Schema({
   paymentMethod: { type: String },
   address: { type: mongoose.Schema.Types.ObjectId, ref: "address"},
   status: { type: String, enum: ["Pending", "Confirmed", "Cancelled", "Packed", "Shipped", "Out for delivery", "Delivered"], default: "Pending" },
+  discount_value: { type: Number },
+  discount_type: { type: Number, enum: [0, 1] }, //0=percentage, 1=flat
   deliveredAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
 });

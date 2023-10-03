@@ -14,6 +14,7 @@ const orderSchema = new Schema({
   paymentMethod: { type: String },
   address: { type: mongoose.Schema.Types.ObjectId, ref: "address"},
   status: { type: String, enum: ["Pending", "Confirmed", "Cancelled", "Packed", "Shipped", "Out for delivery", "Delivered"], default: "Pending" },
+  deliveredAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
 });
 

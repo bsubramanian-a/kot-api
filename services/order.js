@@ -100,7 +100,7 @@ action.getOrderHistory = async (userId) => {
 
 action.getOrderHistoryById = async (orderId) => {
     try {
-        const order = await orderModal.findOne({ _id: orderId, status: "Completed" }).populate("items.product");
+        const order = await orderModal.findOne({ _id: orderId, status: "Delivered" }).populate("items.product");
   
         if (!order) {
             throw new Error("Order not found");
@@ -125,7 +125,9 @@ action.getOrderHistoryById = async (orderId) => {
         };
     } catch (error) {
       logger.error("Error while fetching order history", error);
-      throw error;
+      return {
+        items: [],
+    };
     }
 };
 

@@ -72,7 +72,7 @@ action.updateOrder = async (query, updateData) => {
 
 action.getOrderHistory = async (userId) => {
     try {
-      const orderHistory = await orderModal.find({ user: userId, status: "Completed" }).populate("items.product");
+      const orderHistory = await orderModal.find({ user: userId, status: { $in: ["Completed", "Delivered"] } }).populate("items.product");
   
       const populatedProduct = await Promise.all(orderHistory.map(async oh => {
             const populatedItems = await Promise.all(oh.items.map(async (item) => {
@@ -102,7 +102,7 @@ action.getOrderHistory = async (userId) => {
 
 action.getOrderHistoryById = async (orderId) => {
     try {
-        const order = await orderModal.findOne({ _id: orderId, status: "Delivered" }).populate("items.product");
+        const order = await orderModal.findOne({ _id: orderId }).populate("items.product");
   
         if (!order) {
             throw new Error("Order not found");
